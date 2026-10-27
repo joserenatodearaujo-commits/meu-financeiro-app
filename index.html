@@ -114,6 +114,13 @@ body:has(#modalRoot .modalback) #newEntry,body:has(#modalRoot .modalback) .quick
 .bio-hint{font-size:12px;line-height:1.5;color:#485c71;text-align:center;margin:5px auto 9px;max-width:440px}
 #bioSettingsStatus{padding:9px 11px;border:1px solid #dde5eb;border-radius:9px;background:#f5f8fa}
 #enableBiometric:disabled,#disableBiometric:disabled{opacity:.5;cursor:not-allowed}
+
+/* Conferência monetária obrigatória em ditado, fotos ou valor ambíguo. */
+.amount-confirm{border:1px solid #dcaa39;background:#fff8de;border-radius:10px;padding:12px;margin-top:12px}
+.amount-confirm label{display:flex;align-items:flex-start;gap:10px;color:#513b12;font-weight:700;line-height:1.35;font-size:14px}
+.amount-confirm input{margin:2px 0 0;flex:none;width:20px;height:20px;accent-color:#1768b2}
+.agent-original{margin-top:12px;border:1px solid #d3e1ed;border-radius:8px;background:#eff6fc;padding:10px;font-size:13px;overflow-wrap:anywhere}
+.agent-original small{color:#4e6171;display:block;margin-top:5px}
 </style></head><body><div class="auth" id="auth"><h1>🔐 Meu Financeiro</h1><p class="muted" id="authDesc">Seus dados são criptografados neste navegador antes de serem armazenados.</p><form class="stack" id="authForm"><div class="field"><label for="pass">Senha de proteção</label><div class="password-row"><input autocomplete="current-password" id="pass" minlength="12" placeholder="Mínimo de 12 caracteres" required="" type="password"/><button aria-label="Mostrar senha" aria-pressed="false" class="password-toggle" data-toggle-password="pass" type="button">Mostrar</button></div></div><div class="field" id="confirmWrap"><label for="passConfirm">Confirmar senha</label><div class="password-row"><input autocomplete="new-password" id="passConfirm" minlength="12" placeholder="Repita a senha" type="password"/><button aria-label="Mostrar senha" aria-pressed="false" class="password-toggle" data-toggle-password="passConfirm" type="button">Mostrar</button></div></div><button class="btn primary" id="authButton" type="submit">Criar cofre financeiro</button><p class="muted" style="font-size:12px">A senha não é enviada a nenhum servidor. Se perdê-la, não será possível recuperar seus registros criptografados. Este protótipo não sincroniza dispositivos.</p></form><button type="button" class="btn bio-login hide" id="bioUnlockBtn">🔐 Desbloquear com biometria</button><p class="bio-hint hide" id="bioLoginHint">Use a impressão digital ou o bloqueio de tela oferecido pelo Android. A senha continua disponível.</p><p class="amountneg" id="authError" role="alert"></p></div><div class="hide" id="app"><div class="banner">APP WEB ANDROID • COFRE CRIPTOGRAFADO NESTE NAVEGADOR • SEM SINCRONIZAÇÃO REMOTA</div><div class="shell"><aside class="sidebar"><div class="brand"><b>▥</b> Meu Financeiro</div><button class="nav active" data-page="resumo">▤ Visão geral</button><button class="nav" data-page="fluxo">♧ Fluxo Sankey</button><button class="nav" data-page="movimentos">⇆ Lançamentos</button><button class="nav" data-page="cartoes">▣ Contas e cartões</button><button class="nav" data-page="metas">◎ Metas</button><button class="nav" data-page="projecoes">▥ Projeções</button><button class="nav" data-page="investimentos">▥ Investimentos</button><button class="nav" data-page="config">⚙ Configurações</button><div class="sidefoot">🔒 Dados armazenados com criptografia AES-GCM<br/><br/><button class="btn small" id="lock">Bloquear</button></div></aside><main class="main"><div class="top"><div><h1 id="pageTitle">Visão geral</h1><div class="sub" id="pageSub">Acompanhe seus números financeiros</div></div><div class="actions"><button class="btn primary" id="newEntry">＋ Novo lançamento</button><input aria-label="Mês de referência" id="month" type="month"/></div></div><section class="page" id="resumo"><div class="cards" id="summaryCards"></div><div class="layout"><div><div class="panel"><div class="sectionrow"><h2>Fluxo financeiro (Sankey)</h2><button class="btn small" data-go="fluxo">Explorar fluxo</button></div><div id="sankeySummary"></div></div><div class="panel"><div class="sectionrow"><h2>Projeção: somente recorrentes e faturas</h2><button class="btn small" data-go="projecoes">Detalhar projeção</button></div><div id="projectionSummary"></div></div></div><div><div class="panel"><h2>Orçamento do mês</h2><div id="budgetSummary"></div></div><div class="panel"><h2>Próximos compromissos</h2><div id="upcomingSummary"></div></div><div class="panel"><h2>Alertas e qualidade dos dados</h2><div id="alertsSummary"></div></div></div></div></section><section class="page hiddenpage" id="fluxo"><div class="panel"><div class="sectionrow"><h2>Mapa do dinheiro</h2><div class="filters"><select id="flowBasis"><option value="cash">Caixa (desembolso)</option><option value="competence">Consumo (compra)</option></select><select id="flowDepth"><option value="macro">Categorias macro</option><option value="micro">Categorias micro</option></select></div></div><p class="muted">Verde: receitas. Azul: aplicações. Despesas do amarelo ao vermelho conforme o tamanho relativo de cada categoria. Não contabilizamos novamente a fatura como despesa.</p><div id="sankeyFull"></div></div><div class="panel"><h2>Detalhamento dos fluxos</h2><div id="flowDetails"></div></div></section><section class="page hiddenpage" id="movimentos"><div class="panel"><div class="sectionrow"><h2>Movimentações registradas</h2><div class="filters"><select id="filterType"><option value="all">Todos os tipos</option><option value="income">Receitas</option><option value="expense">Despesas</option><option value="investment">Investimentos</option><option value="transfer">Transferências</option></select></div></div><div class="tablewrap" id="transactionsTable"></div></div></section><section class="page hiddenpage" id="cartoes"><div class="panel"><div class="sectionrow"><h2>Contas e cartões</h2><button class="btn primary" id="newAccount">+ Adicionar conta/cartão</button></div><div class="tablewrap" id="accountsTable"></div></div><div class="panel"><h2>Próximas faturas (parcelas cadastradas)</h2><div class="tablewrap" id="invoiceTable"></div></div></section><section class="page hiddenpage" id="metas"><div class="panel"><div class="sectionrow"><h2>Metas mensais por categoria</h2><button class="btn primary" id="newGoal">+ Definir meta</button></div><div id="goalsTable"></div></div></section><section class="page hiddenpage" id="projecoes"><div class="panel"><div class="sectionrow"><h2>Despesas projetadas: colunas agrupadas</h2><div class="filters"><select id="projHorizon"><option value="6">Próximos 6 meses</option><option value="12">Próximos 12 meses</option></select></div></div><p class="muted">Apenas despesas fixas com recorrência cadastrada e parcelas de cartão com vencimento previsto. Compras novas hipotéticas, inflação e receitas futuras ficam de fora.</p><div id="projectionFull"></div></div><div class="panel"><h2>Compromissos futuros por mês</h2><div class="tablewrap" id="projectionTable"></div></div></section><section class="page hiddenpage" id="investimentos"><div class="panel"><div class="sectionrow"><h2>Movimentações de investimentos</h2><button class="btn primary" id="newInvest">+ Registrar investimento</button></div><div class="cards" id="investCards"></div><div id="investTable"></div><p class="muted">Primeira versão: fluxo de aportes e resgates; não inclui ainda cotações, custódia nem preço médio consolidado.</p></div></section><section class="page hiddenpage" id="config"><div class="panel"><h2>Segurança, backup e importação</h2><div class="notice warning">Os registros são criptografados neste navegador. Não há sincronização com a Biblioteca do ChatGPT nem entre dispositivos. Voz pode usar serviço de fala do navegador; fotos são interpretadas localmente com OCR após baixar os componentes. Para acesso Android, hospede em HTTPS.</div><div class="actions"><button class="btn primary" id="exportBackup">Exportar backup criptografado</button><button class="btn" id="importBackup">Importar backup criptografado</button><input accept=".json,application/json" class="hide" id="fileInput" type="file"/><button class="btn" id="demo">Carregar dados fictícios</button><button class="btn danger" id="erase">Apagar cofre deste navegador</button></div><p class="muted">Importar substitui os dados deste dispositivo após confirmação. Guarde backups em um local protegido e teste sua restauração.</p></div><div class="panel"><h2>Biometria para desbloquear o cofre</h2><p id="bioSettingsStatus" class="muted" role="status">Verificando disponibilidade neste dispositivo...</p><div class="actions"><button class="btn primary" type="button" id="enableBiometric">🔐 Ativar biometria neste aparelho</button><button class="btn" type="button" id="disableBiometric">Desativar biometria</button></div><p class="muted">Opcional. Usa a passkey/WebAuthn com extensão criptográfica PRF quando disponível. O Android pode solicitar impressão digital ou PIN/bloqueio de tela. A senha original permanece necessária para recuperação. Se o aparelho não oferecer PRF, o cofre continuará exigindo senha.</p></div><div class="panel"><h2>Central de lançamentos</h2><p>Use Novo lançamento para informar uma despesa por texto, voz ou foto. A interpretação básica é local e não utiliza o ChatGPT; a integração GPT real necessita de um serviço seguro separado. Nenhum lançamento é salvo sem aprovação.</p></div></section></main></div><div class="notice" hidden="hidden" id="saveToast" style="position:fixed;bottom:92px;right:12px;z-index:99;max-width:450px;box-shadow:0 4px 24px #17243d22;"></div></div><div id="modalRoot"></div>
 
 <script>
@@ -208,16 +215,89 @@ $$('.nav').forEach(b=>b.onclick=()=>page(b.dataset.page));$$('[data-go]').forEac
 let agentDraft=null, agentImageUrl=null, agentRecognizer=null;
 const agentDate=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 function simplify(t){return String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
-function guessAmount(txt){
- const found=[...String(txt).matchAll(/(?:r\s*\$\s*)?(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})|\d+(?:[,.]\d{1,2})?)(?:\s*(?:reais|real|rs))?/gi)]
-  .map(m=>({match:m[0],value:m[1],index:m.index})).filter(x=>!/^\d{4}$/.test(x.value));
- const money=found.find(x=>/r\s*\$|reais|real|rs/i.test(x.match));
- const filtered=found.filter(x=>!/(?:dia\s*|vezes\s*|x\s*)$/i.test(txt.slice(Math.max(0,x.index-8),x.index)) && !/^(?:\d{1,2})$/.test(x.value)&&false);
- const picked=money||found.find(x=>Number(x.value.replaceAll('.','').replace(',','.'))>0);
- if(!picked)return null;
- const raw=picked.value;
- return /^\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?$/.test(raw)?Number(raw.replaceAll('.','').replace(',','.')):Number(raw.replace(',','.'));
+/* v2.4: parser determinístico para valores falados em português brasileiro.
+   Prefere valores monetários explícitos; datas, parcelas e quantidades NÃO são preços. */
+const ptUnits={zero:0,um:1,uma:1,dois:2,duas:2,tres:3,quatro:4,cinco:5,seis:6,sete:7,oito:8,nove:9,dez:10,onze:11,doze:12,treze:13,quatorze:14,catorze:14,quinze:15,dezesseis:16,dezassete:17,dezessete:17,dezoito:18,dezenove:19,vinte:20,trinta:30,quarenta:40,cinquenta:50,sessenta:60,setenta:70,oitenta:80,noventa:90,cem:100,cento:100,duzentos:200,duzentas:200,trezentos:300,trezentas:300,quatrocentos:400,quatrocentas:400,quinhentos:500,quinhentas:500,seiscentos:600,seiscentas:600,setecentos:700,setecentas:700,oitocentos:800,oitocentas:800,novecentos:900,novecentas:900};
+function ptWordsToNumber(s){
+ const words=simplify(s).trim().split(/\s+/).filter(Boolean);if(!words.length)return null;
+ let partial=0,total=0,seen=false;
+ for(const w of words){if(w==='e')continue;if(w==='mil'){total+=Math.max(1,partial)*1000;partial=0;seen=true;continue;}if(!Object.hasOwn(ptUnits,w))return null;partial+=ptUnits[w];seen=true;}
+ return seen?total+partial:null;
 }
+function brNumeric(n){
+ const raw=String(n).trim();if(!/^\d[\d.,]*$/.test(raw))return null;
+ if(/^\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?$/.test(raw))return Number(raw.replaceAll('.','').replace(',','.'));
+ if(/^\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?$/.test(raw))return null; // Pontuação ambígua, não assumir.
+ if(/^\d+(?:,\d{1,2})$/.test(raw))return Number(raw.replace(',','.'));
+ if(/^\d+(?:\.\d{1,2})$/.test(raw))return Number(raw);
+ if(/^\d+$/.test(raw))return Number(raw);
+ return null;
+}
+function ptSmallNumber(s){const raw=simplify(s).trim();return /^\d{1,2}$/.test(raw)?Number(raw):ptWordsToNumber(raw);}
+function appendCents(full,start,value){
+ // Ex.: 15 reais e cinquenta centavos; vinte reais e dez; 30 reais e 20 centavos.
+ const tail=simplify(full.slice(start));const re=/^\s*(?:e|com)\s+([a-z\s]+?|\d{1,2})\s*centavos?\b/i;
+ const explicit=tail.match(re);if(explicit){const cents=ptSmallNumber(explicit[1]);if(cents!=null&&cents>=0&&cents<100)return value+cents/100;}
+ const short=tail.match(/^\s*e\s+(\d{1,2}|[a-z]+(?:\s+e\s+[a-z]+)?)\b/);
+ if(short){const cents=ptSmallNumber(short[1]);if(cents!=null&&cents>=0&&cents<100)return value+cents/100;}
+ return value;
+}
+function guessAmountDetailed(txt){
+ const src=simplify(txt),candidates=[];
+ const add=(value,index,end,score,explicit,origin)=>{if(Number.isFinite(value)&&value>0&&value<1e12)candidates.push({value:Math.round(value*100)/100,index,end,score,explicit,origin})};
+ const N='(?:\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[,.]\\d{1,2})?)';
+ const withCurrency=new RegExp('(?:r\\s*\\$\\s*('+N+')|('+N+')\\s*(?:reais|real|rs)\\b)','gi');
+ for(const m of src.matchAll(withCurrency)){
+   const n=brNumeric(m[1]||m[2]);if(n!==null)add(appendCents(src,m.index+m[0].length,n),m.index,m.index+m[0].length,110,true,'moeda');
+ }
+ const words=[...src.matchAll(/[a-z]+/g)].map(m=>({s:m[0],i:m.index,end:m.index+m[0].length}));
+ for(let i=0;i<words.length;i++){
+   if(!Object.hasOwn(ptUnits,words[i].s)&&words[i].s!=='mil')continue;
+   let j=i;while(j<words.length && (Object.hasOwn(ptUnits,words[j].s)||words[j].s==='mil'||words[j].s==='e') && (j===i||/^\s*$/.test(src.slice(words[j-1].end,words[j].i))))j++;
+   const phrase=src.slice(words[i].i,words[j-1].end),val=ptWordsToNumber(phrase);
+   const after=src.slice(words[j-1].end).match(/^\s*(reais|real|centavos?)\b/);
+   if(val!==null && after?.[1].startsWith('rea')){
+     const end=words[j-1].end+after[0].length;
+     add(appendCents(src,end,val),words[i].i,end,105,true,'por extenso');
+   }else if(val!==null&&after?.[1].startsWith('centavo'))add(val/100,words[i].i,words[j-1].end+after[0].length,95,true,'centavos');
+   else if(val!==null){
+     const before=src.slice(Math.max(0,words[i].i-35),words[i].i),afterText=src.slice(words[j-1].end,words[j-1].end+28);
+     const moneyContext=/(?:gastei|paguei|comprei|custou|custo|valor|recebi|ganhei|cobrou|deu|saiu|total|por|abasteci|investi)\s*(?:de\s*)?$/.test(before);
+     const invalid=/\b(?:dia|numero|nro|parcelas?|vezes|em|litros?|kg)\s*$/.test(before)||/^\s*(?:vezes|parcelas|litros?|kg|dias|centavos)\b/.test(afterText);
+     if(moneyContext&&!invalid&&/^(?:\s*(?:no|na|num|numa|de|do|da|com|por|pelo|pela|em|pix|cartao|credito)\b|\s*[.,;!?]?$)/.test(afterText))add(val,words[i].i,words[j-1].end,60,false,'valor por extenso sem moeda');
+   }
+   i=j-1;
+ }
+ // Expressão coloquial: "quinze e cinquenta" = R$ 15,50. Marcada como ambígua.
+ const short=/\b(\d{1,3}|[a-z]+)\s+e\s+(\d{1,2}|[a-z]+)\b/g;
+ for(const m of src.matchAll(short)){
+   const a=brNumeric(m[1])??ptWordsToNumber(m[1]),b=brNumeric(m[2])??ptWordsToNumber(m[2]);
+   if(a>=10&&a<100&&b>=10&&b<100){
+      const before=src.slice(Math.max(0,m.index-32),m.index);
+      if(/(?:gastei|paguei|comprei|custou|valor|deu|total|por)\s*(?:de\s*)?$/.test(before))add(a+b/100,m.index,m.index+m[0].length,65,false,'expressão informal ambígua');
+   }
+ }
+ const numeric=new RegExp(N,'g');
+ for(const m of src.matchAll(numeric)){
+   if(candidates.some(c=>m.index>=c.index && m.index<c.end))continue;
+   const nearBefore=src.slice(Math.max(0,m.index-25),m.index),nearAfter=src.slice(m.index+m[0].length,m.index+m[0].length+22);
+   if(/[/\-]$/.test(nearBefore)||/^\s*[/\-]/.test(nearAfter)||/\b(?:dia|em|parcela|parcelas|vez|vezes|numero|nro)\s*$/.test(nearBefore)||/^\s*(?:x\b|vezes\b|parcelas?\b|litros?\b|kg\b|km\b|%)/.test(nearAfter))continue;
+   const n=brNumeric(m[0]);if(n===null)continue;
+   const hasVerb=/(?:gastei|paguei|comprei|custou|valor|preco|recebi|cobrou|total|deu|abasteci|investi|por)\s*(?:de\s*)?$/.test(nearBefore);
+   const score=hasVerb?55:15;
+   add(n,m.index,m.index+m[0].length,score,false,'número sem moeda');
+ }
+ // Mesmo valor em interpretações equivalentes não configura conflito.
+ candidates.sort((a,b)=>b.score-a.score||a.index-b.index);
+ const choice=candidates[0];if(!choice)return {value:null,uncertain:true,reason:'Não foi possível identificar um valor em reais.',origin:'nenhum'};
+ const different=candidates.filter(c=>Math.abs(c.value-choice.value)>0.009 && !(c.origin==='centavos'&&choice.explicit&&c.index>choice.end&&c.index-choice.end<12));
+ const competing=different.some(c=>c.score>=choice.score-30);
+ const uncertain=!choice.explicit||competing||choice.origin.includes('ambígua');
+ const reason=competing?'Existem valores diferentes na frase. Confira o total da despesa.':choice.origin.includes('ambígua')?'Expressão informal: confirme os reais e centavos.':!choice.explicit?'Valor sem indicação explícita de reais: confira a transcrição.':'';
+ return {value:choice.value,uncertain,reason,origin:choice.origin};
+}
+function guessAmount(txt){return guessAmountDetailed(txt).value;}
+
 function autoClassify(text){
  const t=simplify(text); const checks=[
   ['Transporte','Combustível',/combust|abastec|gasolina|etanol|diesel|posto de /],
@@ -234,7 +314,7 @@ function autoClassify(text){
  ];for(const [macro,micro,re] of checks)if(re.test(t))return {macro,micro};return {macro:'Outros',micro:'Diversos'};
 }
 function extractLocal(text,fromPhoto=false){
- const norm=simplify(text),today=agentDate();let value=guessAmount(text);
+ const norm=simplify(text),today=agentDate(),detectedAmount=guessAmountDetailed(text);let value=detectedAmount.value;
  // OCR and some tickets have many numeric totals: favor explicit TOTAL or VALOR A PAGAR when present.
  if(fromPhoto){const matched=String(text).match(/(?:total\s*(?:a\s*pagar)?|valor\s*(?:total)?|pago)\s*[:\-\s]*r?\$?\s*(\d{1,6}(?:\.\d{3})*,\d{2})/ig);
   if(matched?.length){const m=matched[matched.length-1].match(/(\d{1,6}(?:\.\d{3})*,\d{2})/);if(m)value=Number(m[1].replaceAll('.','').replace(',','.'));}
@@ -256,7 +336,7 @@ function extractLocal(text,fromPhoto=false){
  const recurring=/\b(todo mes|todos os meses|mensalmente|recorrente|fixa mensal)\b/.test(norm);
  return {type,description,amount:value||0,macro:c.macro,micro:c.micro,purchaseDate:date,paymentDate:date,
   paymentMethod,accountId:'cash-default',cardId:card?.id||'',installments,firstDue:date,recurring,recurringEnd:'',asset:'',operation:'aporte',
-  confidence:value?'revisar':'incompleto',fromPhoto};
+  confidence:value?'revisar':'incompleto',fromPhoto,amountIssue:detectedAmount.reason||'',amountUncertain:detectedAmount.uncertain,amountOrigin:detectedAmount.origin};
 }
 function firstDueForCard(date,card){const close=Number(card.closing)||5,due=Number(card.due)||15;let m=monthKey(date);
  if(Number(date.slice(-2))>close)m=addMonths(m,1);if(due<=close)m=addMonths(m,1);
@@ -266,8 +346,14 @@ function agentCardDescription(){return `<div class="agent-tips">Fale ou escreva 
 function openAgent(){if(!state)return;agentDraft=null;cleanAgentImage();
  modal('＋ Novo lançamento',`${agentCardDescription()}<div class="agent-tools"><button type="button" id="agentMic" class="btn">🎙️ Ditar</button><button type="button" id="agentPhoto" class="btn">📷 Foto</button><button type="button" id="agentTraditional" class="btn">✍️ Tradicional</button></div><div class="field"><label for="agentText">Descreva sua movimentação</label><textarea class="agent-text" id="agentText" name="agentText" rows="5" placeholder="Ex.: R$ 45 de almoço, no Pix, hoje" required></textarea></div><input class="hide" accept="image/*" capture="environment" id="agentFile" type="file"><div id="agentStatus" class="agent-status" role="status">A leitura de foto é feita neste dispositivo; a voz pode usar o reconhecimento do navegador.</div>`,async f=>{
  const text=String(f.get('agentText')||'').trim();if(!text)throw Error('Descreva a movimentação antes de continuar.');
+ const fromVoice=$('#agentText')?.dataset?.fromVoice==='1',voiceUncertain=$('#agentText')?.dataset?.voiceUncertain==='1';
  let obj=null;try{obj=await browserAI(text)}catch(e){/* local fallback intentionally */}
- const parsed=obj?{...extractLocal(text),...obj}:extractLocal(text,agentDraft?.fromPhoto);
+ const local=extractLocal(text,agentDraft?.fromPhoto);
+ const parsed=obj?{...local,...obj}:local;
+ // Nunca deixar um modelo de linguagem substituir silenciosamente um valor monetário reconhecido.
+ if(obj&&local.amount&&Math.abs(Number(obj.amount)-local.amount)>0.009){parsed.amount=local.amount;parsed.amountUncertain=true;parsed.amountIssue='O interpretador e o modelo divergiram sobre o valor. Confira e corrija.';}
+ parsed.fromVoice=fromVoice;parsed.sourceText=fromVoice?text.slice(0,220):'';
+ if(voiceUncertain){parsed.amountUncertain=true;parsed.amountIssue='O reconhecimento de voz ofereceu valores diferentes. Confira o total.';}
  openApproval(parsed);return false;
  });
  $('#modalForm button[type="submit"]').textContent='Gerar card de confirmação';
@@ -289,9 +375,16 @@ async function browserAI(text){
 function stopVoice(){if(agentRecognizer){try{agentRecognizer.stop()}catch(e){}agentRecognizer=null;}}
 function startVoice(){const Speech=globalThis.SpeechRecognition||globalThis.webkitSpeechRecognition;
  if(!Speech){$('#agentStatus').textContent='Reconhecimento de voz indisponível neste navegador. Use o microfone do teclado Android ou digite.';return;}
- stopVoice();const speech=new Speech();agentRecognizer=speech;speech.lang='pt-BR';speech.interimResults=false;speech.continuous=false;
+ stopVoice();const speech=new Speech();agentRecognizer=speech;speech.lang='pt-BR';speech.interimResults=false;speech.continuous=false;speech.maxAlternatives=3;
+ if($('#agentText')){$('#agentText').dataset.fromVoice='1';$('#agentText').dataset.voiceUncertain='';}
  $('#agentStatus').textContent='🎙️ Ouvindo… diga a despesa e aguarde.';
- speech.onresult=e=>{if(!$('#agentText'))return;const phrase=[...e.results].map(x=>x[0]?.transcript||'').join(' ').trim();$('#agentText').value=($('#agentText').value+' '+phrase).trim();$('#agentStatus').textContent='Texto reconhecido. Confira e toque em Gerar card.';};
+ speech.onresult=e=>{if(!$('#agentText'))return;const phrase=[...e.results].map(x=>x[0]?.transcript||'').join(' ').trim();
+  const variants=[...e.results].flatMap(x=>Array.from(x).slice(0,3).map(a=>a.transcript||''));
+  const amounts=variants.map(v=>guessAmountDetailed(v).value).filter(v=>v!=null);
+  const disagree=amounts.some(v=>Math.abs(v-amounts[0])>0.009);
+  $('#agentText').dataset.voiceUncertain=disagree?'1':'';
+  $('#agentText').value=($('#agentText').value+' '+phrase).trim();
+  $('#agentStatus').textContent=(disagree?'⚠️ O áudio gerou valores diferentes. ':'🎙️ Ouvi: ')+phrase+'. Revise antes de gerar o card.';};
  speech.onerror=e=>{if($('#agentStatus'))$('#agentStatus').textContent='Não foi possível reconhecer a voz ('+e.error+'). Use o microfone do teclado Android.';};
  speech.onend=()=>{agentRecognizer=null};
  try{speech.start()}catch(e){$('#agentStatus').textContent='Microfone não disponível. Confira a permissão no navegador.'}
@@ -316,8 +409,11 @@ function openApproval(a){stopVoice();cleanAgentImage();
  const catOpt=opts(categories.map(x=>[x,x]),a.macro);
  const cards=state.accounts.filter(x=>x.type==='card');
  const pay=[['unspecified','Escolher pagamento'],['pix','Pix'],['cash','Dinheiro'],['debit','Cartão de débito'],['credit','Cartão de crédito']];
- const warning=a.amount<=0?'Valor não identificado. Informe manualmente.':a.paymentMethod==='unspecified'?'Selecione a forma de pagamento antes de gravar.':'Confirme os dados identificados; a interpretação pode cometer erros.';
- modal('Confirmar lançamento',`<div class="agent-preview"><div class="muted">Prévia • nenhum dado foi gravado</div><div class="agent-value">${fmt(a.amount)}</div><b>${esc(a.description)}</b><div class="agent-warning">${esc(warning)}</div></div><div class="formgrid">
+ const warning=a.amount<=0?'Valor não identificado. Informe manualmente.':a.amountIssue|| (a.paymentMethod==='unspecified'?'Selecione a forma de pagamento antes de gravar.':'Confirme os dados identificados; a interpretação pode cometer erros.');
+ const requireCheck=!!(a.fromVoice||a.fromPhoto||a.amountUncertain);
+ const valueReview=requireCheck?`<div class="amount-confirm"><label><input type="checkbox" name="amountConfirmed" id="amountConfirmed" required> <span>Conferi o valor da despesa em reais e centavos</span></label></div>`:'';
+ const originalVoice=a.fromVoice?`<div class="agent-original"><strong>Você disse (transcrição do Android):</strong><div>${esc(a.sourceText||'')}</div><small>Se a transcrição estiver errada, corrija o campo Valor abaixo.</small></div>`:'';
+ modal('Confirmar lançamento',`<div class="agent-preview"><div class="muted">Prévia • nenhum dado foi gravado</div><div class="agent-value">${fmt(a.amount)}</div><b>${esc(a.description)}</b><div class="agent-warning">${esc(warning)}</div>${originalVoice}${valueReview}</div><div class="formgrid">
  <div class="field"><label>Tipo</label><select name="type">${opts([['expense','Despesa'],['income','Receita'],['investment','Investimento'],['transfer','Transferência']],a.type)}</select></div>
  ${as('description','Descrição',a.description,'required maxlength="120"')}
  ${as('amount','Valor R$',a.amount||'','type="number" min="0.01" step="0.01" required')}
@@ -356,6 +452,8 @@ function openApproval(a){stopVoice();cleanAgentImage();
  return false;
  });
  const action=$('#modalForm button[type="submit"]');action.textContent='✓ Confirmar e gravar';
+ const amountBox=$('#modalForm input[name="amount"]');
+ if(amountBox)amountBox.addEventListener('input',()=>{const v=Number(amountBox.value),preview=$('#modalForm .agent-value');if(preview)preview.textContent=Number.isFinite(v)&&v>0?fmt(v):'Valor a corrigir';const cb=$('#amountConfirmed');if(cb)cb.checked=false;});
 }
 // Cancela reconhecimento ao bloquear o cofre.
 document.addEventListener('click',e=>{if(e.target?.id==='closeModal'||e.target?.id==='cancelModal')stopVoice()});
