@@ -1,0 +1,21 @@
+'use strict';
+/* Release contract: assets, load order, backward compatibility, offline list. */
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const root=path.join(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const js=[...html.matchAll(/<script src="\.\/([^\"]+)"\s*><\/script>/g)].map(x=>x[1]);
+const css=[...html.matchAll(/<link rel="stylesheet" href="\.\/([^\"]+)"\s*\/>/g)].map(x=>x[1]);
+assert.equal(js.length,17,'expected 17 JavaScript files in order');assert.equal(css.length,2);
+assert.equal(js[0],'js/core/shared.js');assert.equal(js.at(-1),'js/core/launch.js');
+for(const f of [...js,...css,'icons/icon.svg','sw.js','manifest.webmanifest'])assert(fs.existsSync(path.join(root,f)),f);
+for(const f of js)assert(fs.readFileSync(path.join(root,f),'utf8').startsWith("'use strict';"),f);
+const baseline=fs.readFileSync(path.join(root,'tests/fixtures/v26_vault.js'),'utf8');
+const vault=fs.readFileSync(path.join(root,'js/core/vault.js'),'utf8');
+assert(vault.includes(baseline.trim()),'vault/encryption code must match v2.6 byte-for-byte');
+const bioline=fs.readFileSync(path.join(root,'js/core/biometrics.js'),'utf8');
+for(const marker of ['meu-financeiro/biometria/v1/','meu-financeiro-biometria-v1','credential','passphrase'])assert(bioline.includes(marker));
+assert(!html.includes('TEST_ONLY'),'not publish any financial fixture in app');
+const worker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
+for(const f of [...js,...css])assert(worker.includes("'./"+f+"'"),'offline asset missing from SW: '+f);
+const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.webmanifest'),'utf8'));
+assert.equal(manifest.start_url,'./');assert.equal(manifest.display,'standalone');
+console.log('PASS asset manifest, load order, legacy encryption format, offline cache coverage');
