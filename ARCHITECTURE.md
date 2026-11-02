@@ -82,3 +82,11 @@ GitHub Pages é público, **somente código**. Não sincroniza saldos entre nave
 - `state.importCheckpoints[]`: resumos opcionais de conta/mês, salvos explicitamente no mesmo cofre AES-GCM, sem armazenar linhas ou anexos e sem impactar `FinanceRules`.
 - Fechamento parcial de banco é diferente de conciliação de toda a carteira: cartão, dinheiro físico, cobertura completa e classificação final permanecem pendentes até tratamento em etapas futuras.
 - Testes de correspondência ambiguidades 1:N, faturas não duplicadas, dinheiro físico, saldos exatos, proteção do histórico e revisão sem gravação.
+
+
+## V2.13 — Fonte oficial Android e contrato de sincronização
+- A base real no Android é a origem para inicialização, nunca a base fictícia do desktop. A cópia inicial é feita por exportação criptografada Android → restauração manual desktop, precedida por backup confirmado do destino.
+- Tela `sync` e `js/ui/device-transfer.js`: prévia por contagem antes da restauração, confirmação explícita de origem Android, chave/senha de desbloqueio substituídas e biometria anterior removida da IndexedDB na mesma transação que troca o cofre. Não usa rede.
+- `supabase/migrations/20261102_encrypted_vault_sync.sql`: esquema **ainda não aplicado**; dados criptografados com RLS e funções autenticadas de leitura e escrita compare-and-swap por revisão do servidor; histórico de snapshots anteriores cifrados. Falhas de revisão retornam conflito em vez de sobrescrever.
+- Antes de ativar sync: criar projeto Supabase, autenticação/MFA, migrations e teste de isolamento entre usuários, código cliente com filas e conflitos, teste de Android como primeiro bootstrap e desktop somente pull. Testar ausência de envio de dados em claro e reconciliação multi-dispositivo. Nunca usar GitHub Pages como banco de dados.
+- Não confundir migração manual com sincronização. Não habilitar entrada de dados bancários reais no desktop antes da verificação ponta a ponta.
