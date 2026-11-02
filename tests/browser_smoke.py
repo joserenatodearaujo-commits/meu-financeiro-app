@@ -74,7 +74,7 @@ def test_one(browser,modular,width):
     assert p.locator('#taxonomyList .taxonomy-group').count()==9
     assert p.locator('#taxonomyList details.taxonomy-group[open]').count()==0, 'Categorias devem começar recolhidas'
     p.locator('#taxonomyExpandAll').click()
-    assert p.locator('#taxonomyList details.taxonomy-group[open]').count()==9
+    assert p.locator('#taxonomyList details.taxonomy-group[open]').count()==9, p.evaluate("Array.from(document.querySelectorAll('#taxonomyList details.taxonomy-group')).map(d=>({name:d.dataset.taxGroup,open:d.open}))")
     p.locator('#taxonomyCollapseAll').click()
     assert p.locator('#taxonomyList details.taxonomy-group[open]').count()==0
     p.locator('#newTaxCategory').click()
