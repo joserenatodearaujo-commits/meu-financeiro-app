@@ -23,7 +23,7 @@ throws(()=>R.deleteSub(t,'Pets','Ração e petiscos',{transactions:[{macro:'Pets
 t=R.renameCategory(t,'Pets','Animais',{transactions:[],goals:[]});
 ok(!!R.find(t,'Animais'),'renomeia categoria livre');
 throws(()=>R.deleteCategory(t,'Animais',{transactions:[],goals:[{macro:'Animais'}]}),/vinculados/,'protege metas');
-throws(()=>R.renameCategory(t,'Outros','X',{transactions:[],goals:[]}),/Outros/,'preserva categoria fallback');
+throws(()=>R.renameCategory(t,'Outros','Nova categoria',{transactions:[],goals:[]}),/Outros/,'preserva categoria fallback');
 t=R.deleteSub(t,'Animais','Ração e petiscos',{transactions:[]});
 ok(!R.find(t,'Animais').subcategories.includes('Ração e petiscos'),'exclui subcategoria sem uso');
 t=R.deleteCategory(t,'Animais',{transactions:[],goals:[]});
