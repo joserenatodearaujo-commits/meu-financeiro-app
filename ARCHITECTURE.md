@@ -90,3 +90,12 @@ GitHub Pages é público, **somente código**. Não sincroniza saldos entre nave
 - `supabase/migrations/20261102_encrypted_vault_sync.sql`: esquema **ainda não aplicado**; dados criptografados com RLS e funções autenticadas de leitura e escrita compare-and-swap por revisão do servidor; histórico de snapshots anteriores cifrados. Falhas de revisão retornam conflito em vez de sobrescrever.
 - Antes de ativar sync: criar projeto Supabase, autenticação/MFA, migrations e teste de isolamento entre usuários, código cliente com filas e conflitos, teste de Android como primeiro bootstrap e desktop somente pull. Testar ausência de envio de dados em claro e reconciliação multi-dispositivo. Nunca usar GitHub Pages como banco de dados.
 - Não confundir migração manual com sincronização. Não habilitar entrada de dados bancários reais no desktop antes da verificação ponta a ponta.
+
+
+## V2.14 — Nuvem ativada com proteção da fonte Android
+- Supabase `cvrshlwutczmeyqotqbw`, South America São Paulo, com migrations aplicadas; `private.encrypted_vaults` e `private.encrypted_vault_history` negadas a anon/authenticated, RLS habilitado, leitura/gravação por RPC com `auth.uid()` e revisão CAS. Funções públicas `security definer` são exceção controlada: auditar identidades e permissões periódicas.
+- `js/core/cloud-sync.js` usa Auth REST e RPCs com chave **publishable**, nunca service_role. Tokens de Auth durante sessão em `sessionStorage` e chave de cofre separada.
+- Sem bootstrap automático: somente Android com consentimento, backup e pelo menos um lançamento pode criar a primeira revisão. Desktop faz somente download explícito com senha do cofre e backup prévio.
+- Depois do vínculo, `save()` mantém escrita local AES-GCM e sinaliza pendência no IndexedDB. Sync tenta comparar versão remota antes de push; servidor nega gravação obsoleta. Pull aplica dados após descriptografia local e somente se não houver pendência. Conflitos ficam bloqueados para resolução manual.
+- Limites: PWA aberto/online/desbloqueado para sincronizar, polling ao retornar e a cada 20s, sem merge de edições simultâneas. O fato de estar no servidor não garante consentimento da IA; não há integração de IA na nuvem nesta fase.
+- Testar autenticação, login, bootstrap, leitura do desktop e conflitos em `tests/cloud_sync_browser.py`. Dados fictícios somente.

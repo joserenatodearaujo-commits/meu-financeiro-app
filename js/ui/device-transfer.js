@@ -15,7 +15,7 @@ async function replaceLocalVaultAndBio(v){
  const db=await openDB();
  return new Promise((resolve,reject)=>{
   const tx=db.transaction('vault','readwrite'),store=tx.objectStore('vault');
-  store.put(v,'main');store.delete('bioUnlock');
+  store.put(v,'main');store.delete('bioUnlock');store.delete('cloudSyncMeta');
   tx.oncomplete=()=>resolve();
   tx.onerror=()=>reject(tx.error||Error('Falha ao restaurar o cofre.'));
   tx.onabort=()=>reject(tx.error||Error('Restauração cancelada.'));

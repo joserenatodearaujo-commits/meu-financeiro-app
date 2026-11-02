@@ -107,3 +107,11 @@ input::placeholder,textarea::placeholder{color:#697586;opacity:1;-webkit-text-fi
 #sync .actions{margin:11px 0}
 #sync .formgrid{max-width:700px}
 @media(max-width:620px){#sync .formgrid{grid-template-columns:1fr}#sync .actions .btn{max-width:100%;white-space:normal;text-align:center}}
+
+/* V2.14 — status da nuvem e confirmação da origem Android. */
+#cloudLoginForm{max-width:750px;margin:14px 0}
+#cloudStatus,#cloudConnected,#cloudRemote{overflow-wrap:anywhere}
+#cloudVaultPassword{width:100%;max-width:450px}
+#cloudPublishAndroid,#cloudReceiveDesktop{max-width:100%;white-space:normal}
+#sync #cloudLoginForm .btn{align-self:end}
+@media(max-width:520px){#cloudLoginForm{grid-template-columns:1fr}#cloudLoginForm .btn{width:100%}}

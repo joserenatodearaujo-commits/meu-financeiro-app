@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const root=path.join(__dirname,'..'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const js=[...html.matchAll(/<script src="\.\/([^\"]+)"\s*><\/script>/g)].map(x=>x[1]);
 const css=[...html.matchAll(/<link rel="stylesheet" href="\.\/([^\"]+)"\s*\/>/g)].map(x=>x[1]);
-assert.equal(js.length,26,'expected 26 JavaScript files in order');assert.equal(css.length,2);
+assert.equal(js.length,27,'expected 27 JavaScript files in order');assert.equal(css.length,2);
 assert(js.includes('js/ui/banking.js'),'banking workflow file missing');assert(js.includes('js/finance/taxonomy.js')&&js.includes('js/ui/taxonomy.js'),'categorization modules missing');assert.equal(js[0],'js/core/shared.js');assert.equal(js.at(-1),'js/core/launch.js');
 for(const f of [...js,...css,'icons/icon.svg','sw.js','manifest.webmanifest'])assert(fs.existsSync(path.join(root,f)),f);
 for(const f of js.filter(f=>!f.startsWith('js/vendor/')))assert(fs.readFileSync(path.join(root,f),'utf8').startsWith("'use strict';"),f);
@@ -17,7 +17,8 @@ for(const marker of ['meu-financeiro/biometria/v1/','meu-financeiro-biometria-v1
 assert(html.includes('id="importFiles"')&&html.includes('multiple')&&html.includes('id="importResults"'),'secure multi-file import field absent');
 assert(js.includes('js/vendor/pdf.min.js')&&js.includes('js/import/parser.js')&&js.includes('js/ui/importer.js')&&js.includes('js/import/reconcile.js')&&js.includes('js/ui/reconcile.js'),'import/reconciliation modules missing');
 assert(html.includes('id="deviceTransferAndroidExport"')&&html.includes('id="deviceTransferApply"')&&html.includes('data-page="sync"'),'Android -> desktop migration UI missing');
-assert(js.includes('js/ui/device-transfer.js'),'device transfer code missing');
+assert(js.includes('js/ui/device-transfer.js')&&js.includes('js/core/cloud-sync.js'),'sync code missing');
+assert(html.includes('id="cloudPublishAndroid"')&&html.includes('id="cloudReceiveDesktop"')&&html.includes('id="cloudLoginForm"'),'cloud login and gated sync not exposed');
 assert(html.includes('id="taxonomyList"')&&html.includes('id="newTaxCategory"'),'taxonomy management missing');assert(html.includes('id="accountsStatement"'),'bank statement section missing');assert(html.includes('id="newTransfer"'),'transfer form trigger missing');assert(!html.includes('TEST_ONLY'),'not publish any financial fixture in app');
 const worker=fs.readFileSync(path.join(root,'sw.js'),'utf8');
 for(const f of [...js,...css,'js/vendor/pdf.worker.min.js'])assert(worker.includes('./'+f),'offline asset missing from SW: '+f);
