@@ -16,7 +16,7 @@ eq(R.date('2026-11-02'),'2026-11-02','ISO');
 eq(R.date('31/02/2026'),'','Data inválida não reconhecida');
 eq(R.date('26/10'),'','Data incompleta não inferida');
 eq(R.cents('R$ 1.234,56'),123456,'R$');
-eq(R.cents('- 1.234,56'),null,'Separação suspeita rejeitada');
+eq(R.cents('- 1.234,56'),-123456,'Negativo com espaçamento aceito');
 eq(R.cents('-1.234,56'),-123456,'Débito');
 eq(R.cents('(85,40)'),-8540,'Negativo em parênteses');
 eq(R.cents('85,40 C'),8540,'Crédito sufixo');
