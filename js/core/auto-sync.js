@@ -185,6 +185,11 @@ async function autoRefresh(){
    return;
   }
   if(!autoMetaCurrent(meta)){
+   if(autoOnAndroid()&&state.transactions.length){
+    auto.blocked=true;
+    autoVisible('conflict','Este Android possui registros locais ainda não vinculados, mas a conta já tem uma base oficial. Ambas as cópias foram preservadas para conferência.',true);
+    return;
+   }
    await autoReceive(r);return;
   }
   if(meta.revision>r.revision)throw Error('Revisão local maior que a revisão remota; acesso bloqueado.');
@@ -194,9 +199,11 @@ async function autoRefresh(){
    return;
   }
   const latest=await decryptData(r.envelope,passphrase);
+  if(JSON.stringify(state)!==inMemoryBefore){autoVisible('pending','Nova edição local detectada; a atualização remota será conferida depois.');return}
   const baseEnvelope=await autoLocal('autoSyncBase','get');
   if(!baseEnvelope)throw Error('Base de comparação criptografada ausente; sincronização bloqueada.');
   const baseline=await decryptData(baseEnvelope,passphrase);
+  if(JSON.stringify(state)!==inMemoryBefore){autoVisible('pending','Nova edição local detectada; nenhuma versão foi substituída.');return}
   if(meta.dirty){
    const merged=autoThreeWay(baseline,state,latest);
    if(merged.conflicts.length){
