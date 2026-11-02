@@ -40,3 +40,15 @@ O teste de interface usa dados **fictícios** e criptografia/armazenamento simul
 
 ## Publicação
 GitHub Pages: branch `main`, raiz `/`. O SW pré-armazena todos os arquivos HTML/CSS/JS públicos. `index.html` deve manter as mesmas URLs relativas e o mesmo domínio para preservar acesso ao cofre local existente.
+
+
+## Contas, dinheiro físico e cartão de crédito (V2.8)
+- Cadastre **Conta bancária**, **Carteira (dinheiro em espécie)** ou **Cartão** em Contas e cartões.
+- O saldo inicial é um ponto de partida em uma data, não receita. Não recategorize automaticamente a conta antiga `Dinheiro/Pix`; confira o saldo e a distribuição dos lançamentos antigos.
+- Use **Transferir entre contas** para saques, depósitos e movimentações próprias: não contam como despesas.
+- Compras de cartão contam no orçamento/categorias na **data da compra** e se tornam parcelas de faturas futuras.
+- A fatura pode ser paga integralmente ou parcialmente escolhendo **Pagar fatura** e a conta bancária debitada. O extrato mostra **Pagamento de fatura**, mas ele não aparece como uma segunda compra.
+- A visão de **consumo** mostra despesas contratadas; a de **caixa** mostra desembolsos reais de faturas registradas. Projeções mostram faturas ainda não pagas.
+- Faturas históricas sem pagamento registrado devem ser conciliadas; não são automaticamente marcadas como pagas.
+- Saldos são estimados a partir dos dados lançados. Receitas e gastos recorrentes previstos ainda não têm confirmação de liquidação individual e podem diferir do extrato bancário real.
+- Sua senha e biometria continuam as mesmas; todos os dados permanecem no cofre local criptografado. Não limpe os dados do navegador sem backup.

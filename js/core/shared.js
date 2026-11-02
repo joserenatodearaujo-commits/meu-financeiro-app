@@ -6,7 +6,7 @@ const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(
 const viewedMonths=()=>Array.from({length:periodMonths},(_,i)=>addMonths(selectedMonth,i-periodMonths+1));
 const periodLabel=()=>periodMonths===1?selectedMonth:`${viewedMonths()[0]} a ${selectedMonth}`;
 const periodSums=months=>months.reduce((a,m)=>{const v=sums(m);a.ins+=v.ins;a.expenses+=v.expenses;a.invest+=v.invest;a.left+=v.left;return a},{ins:0,expenses:0,invest:0,left:0});
-function periodBreakdown(months,basis='cash',depth='macro'){const vals={};months.forEach(m=>breakdown(m,basis,depth).forEach(([cat,val])=>{vals[cat]=(vals[cat]||0)+val}));return Object.entries(vals).sort((a,b)=>b[1]-a[1])}const plain=()=>({version:1,accounts:[{id:'cash-default',name:'Dinheiro/Pix',type:'bank',closing:1,due:10}],transactions:[],goals:[],createdAt:new Date().toISOString()});
+function periodBreakdown(months,basis='cash',depth='macro'){const vals={};months.forEach(m=>breakdown(m,basis,depth).forEach(([cat,val])=>{vals[cat]=(vals[cat]||0)+val}));return Object.entries(vals).sort((a,b)=>b[1]-a[1])}const plain=()=>({version:1,accounts:[{id:'cash-default',name:'Dinheiro/Pix',type:'bank',closing:1,due:10}],transactions:[],goals:[],transfers:[],invoicePayments:[],createdAt:new Date().toISOString()});
 document.querySelectorAll('[data-toggle-password]').forEach(button=>{
   button.addEventListener('click',()=>{
     const field=document.getElementById(button.dataset.togglePassword);
@@ -18,3 +18,6 @@ document.querySelectorAll('[data-toggle-password]').forEach(button=>{
     field.focus();
   });
 });
+
+// Campos novos opcionais: cofres V2.6/V2.7 são abertos sem migração destrutiva.
+function ensureFinancialState(obj){if(!obj||!Array.isArray(obj.transactions)||!Array.isArray(obj.accounts))throw Error('Cofre inválido');if(!Array.isArray(obj.goals))obj.goals=[];if(!Array.isArray(obj.transfers))obj.transfers=[];if(!Array.isArray(obj.invoicePayments))obj.invoicePayments=[];return obj}

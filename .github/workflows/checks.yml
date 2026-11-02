@@ -1,0 +1,31 @@
+name: Verificacoes Meu Financeiro
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar sintaxe do aplicativo
+        run: |
+          find js -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Contratos e privacidade
+        run: node tests/contract.test.cjs
+      - name: Regressoes das regras financeiras
+        run: node tests/finance_rules.test.cjs
+      - name: Testar contas, faturas e conciliação
+        run: node tests/banking_v28.test.cjs
+      - name: Criptografia e compatibilidade de cofres
+        run: node tests/crypto.test.cjs
+      - name: Preparar navegador de testes
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Testar fluxos Android e desktop
+        run: python tests/browser_smoke.py

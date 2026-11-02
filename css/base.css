@@ -13,3 +13,10 @@ input::placeholder,textarea::placeholder{color:#697586;opacity:1;-webkit-text-fi
 .quick-widget{position:fixed;right:20px;bottom:20px;z-index:8}.quick-trigger{border:0;border-radius:99px;background:#303234;color:white;font-weight:700;padding:15px 20px;box-shadow:0 8px 25px #16222d4d}.quick-panel{position:absolute;bottom:68px;right:0;width:min(340px,calc(100vw - 28px));padding:16px;background:white;border:1px solid #dce4eb;border-radius:17px;box-shadow:0 15px 45px #14253644}.quick-panel h3{margin:0 0 5px}.quick-choices{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0}.quick-choice{min-height:86px;border:1px solid #d9e1e9;background:#f7f9fb;border-radius:12px;padding:10px 3px;color:#1e293b;font-weight:600}.quick-choice span{display:block;font-size:23px;margin-bottom:6px}.quick-choice:focus-visible,.quick-trigger:focus-visible{outline:3px solid #3698f4;outline-offset:2px}.quick-help{font-size:12px;color:#617083;line-height:1.5}.quick-text{width:100%;min-height:90px}.photo-preview{display:block;max-width:100%;max-height:205px;margin:9px auto;border-radius:9px;object-fit:contain}.quick-status{font-size:13px;color:#485c71;margin:10px 0}.quick-widget[hidden],.quick-panel[hidden]{display:none!important}
 @media(max-width:730px){.quick-widget{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom))}.quick-trigger{width:100%;min-height:53px}.quick-panel{width:100%;right:0;bottom:62px}.main{padding-bottom:90px}.modalback{align-items:flex-end;padding:6px}.modal{max-height:90dvh;border-radius:18px 18px 7px 7px;padding:18px}}
 
+
+/* v2.8: campos conforme o tipo de conta, sem interferir nos formulários antigos */
+.account-opening[hidden],.account-card[hidden]{display:none!important}
+#accountInfo{margin-bottom:12px}
+#invoiceTable .btn{margin:2px}
+
+#agentAccountField[hidden]{display:none!important}

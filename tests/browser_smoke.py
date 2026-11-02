@@ -115,7 +115,7 @@ def test_one(browser,modular,width):
     assert len(p.evaluate('state.transactions'))==1
     # one credit card purchase, payments split over six months
     p.locator('#newEntry').click()
-    p.locator('#agentText').fill('Comprei supermercado de 1200 reais no cartão Nubank em 6 parcelas no dia 03/11/2026')
+    p.locator('#agentText').fill('Comprei supermercado de 1200 reais no cartão Nubank em 6 parcelas no dia 01/11/2026')
     p.locator('#modalForm button[type="submit"]').click()
     assert float(p.locator('#modalForm input[name="amount"]').input_value())==1200
     p.locator('#modalForm button[type="submit"]').click()
@@ -133,6 +133,29 @@ def test_one(browser,modular,width):
     assert result['competence']==1200,result
     assert sum(result['split'])==1200,result
     assert result['goal']==4950,result
+    # V2.8: carteira física, transferência interna, pagamento parcial de fatura.
+    p.locator('[data-page="cartoes"]').click()
+    p.locator('#newAccount').click()
+    p.locator('#modalForm input[name="name"]').fill('Minha carteira')
+    p.locator('#modalForm select[name="type"]').select_option('cash')
+    p.locator('#modalForm input[name="openingBalance"]').fill('100')
+    p.locator('#modalForm button[type="submit"]').click()
+    p.wait_for_timeout(50)
+    assert p.evaluate("state.accounts.some(a=>a.type==='cash' && a.name==='Minha carteira')")
+    p.locator('#newTransfer').click()
+    p.locator('#modalForm input[name="amount"]').fill('50')
+    p.locator('#modalForm button[type="submit"]').click()
+    p.wait_for_timeout(60)
+    assert p.evaluate('state.transfers.length')==1
+    assert p.evaluate("FinanceRules.accountBalance(state,state.accounts.find(a=>a.type==='cash').id,bankingDate())")==150
+    assert p.locator('[data-invoice-pay]').count()>=1
+    p.locator('[data-invoice-pay]').first.click()
+    p.locator('#modalForm input[name="amount"]').fill('75')
+    p.locator('#modalForm button[type="submit"]').click()
+    p.wait_for_timeout(80)
+    assert p.evaluate('state.invoicePayments.length')==1
+    assert p.evaluate("FinanceRules.invoices(state).some(i=>i.paid===75&&i.outstanding===125)")
+    assert 'Pagamento da fatura' in p.locator('#accountsStatement').inner_text()
     assert not errors,errors
     p.locator('[data-page="projecoes"]').click()
     assert p.locator('#projectionFull').count()==1
@@ -200,7 +223,8 @@ def test_one(browser,modular,width):
 
 if __name__=='__main__':
     with sync_playwright() as sp:
-        b=sp.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+        exe='/usr/bin/chromium' if Path('/usr/bin/chromium').exists() else None
+        b=sp.chromium.launch(executable_path=exe,headless=True,args=['--no-sandbox'])
         for w in [320,360,390,412,768,1280]:
             for modular in [True]:
                 try:

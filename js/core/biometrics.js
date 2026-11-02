@@ -43,7 +43,7 @@ async function unlockBio(){const btn=$('#bioUnlockBtn');btn.disabled=true;$('#au
  completeUnlock(financial,recovered,vault.salt);
  }catch(err){$('#authError').textContent=bioMessage(err)+' A senha continua disponível.'}finally{btn.disabled=false}}
 async function disableBio(){if(!state)return;const ok=confirm('Desativar o desbloqueio biométrico neste navegador? A sua senha continuará funcionando.');if(!ok)return;try{await deleteBio();await setBioStatus();$('#bioSettingsStatus').textContent='Biometria desativada neste navegador. A passkey do Android pode permanecer no gerenciador do dispositivo.'}catch(err){$('#bioSettingsStatus').textContent='Erro ao desativar: '+bioMessage(err)}}
-function completeUnlock(financial,pass,secureSalt){state=financial;passphrase=pass;salt=secureSalt;$('#pass').value='';$('#passConfirm').value='';$('#authError').textContent='';$('#auth').classList.add('hide');$('#app').classList.remove('hide');renderAll();setBioStatus()}
+function completeUnlock(financial,pass,secureSalt){state=ensureFinancialState(financial);passphrase=pass;salt=secureSalt;$('#pass').value='';$('#passConfirm').value='';$('#authError').textContent='';$('#auth').classList.add('hide');$('#app').classList.remove('hide');renderAll();setBioStatus()}
 $('#bioUnlockBtn').addEventListener('click',unlockBio);
 $('#enableBiometric').addEventListener('click',enableBio);
 $('#disableBiometric').addEventListener('click',disableBio);

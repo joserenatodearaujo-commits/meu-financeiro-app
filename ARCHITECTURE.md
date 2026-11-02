@@ -37,3 +37,17 @@ Nenhuma alteração desta refatoração mudou essas condições.
 
 ## Notas de segurança
 GitHub Pages é público, **somente código**. Não sincroniza saldos entre navegadores. Acesso biométrico utiliza passkey local; não é um servidor de contas. OCR usa biblioteca externa CDN no momento da leitura; o navegador pode obter transcrição de serviços próprios do fornecedor.
+
+
+## V2.8 — Bancos, carteira física e faturas conciliadas
+- Conserva a origem, DB (`meu-financeiro-v1`), cofre e criptografia anteriores.
+- `accounts[]` pode ter `type:'cash'` (carteira) ou `bank` ou `card`; saldos usam `openingBalance` e `openingDate` por conta. Ausência desses campos em contas legadas mantém registros e mostra saldo estimado a conciliar.
+- `transfers[]` contém `id, fromAccountId, toAccountId, amount, date, description`. Transferência entre contas próprias não é despesa nem receita.
+- `invoicePayments[]` contém `id, cardId, month, accountId, amount, date`; pagamentos debitam a conta e reduzem o compromisso, mas não geram segunda despesa por categoria.
+- Compra no cartão aparece integralmente em consumo (data da compra); as parcelas compõem faturas por mês de vencimento; caixa realizado só é debitado ao registrar pagamento de fatura.
+- Pagamentos de fatura parcialmente realizados são rateados proporcionalmente às categorias da fatura na visualização de caixa, preservando a classificação original para visão de consumo.
+- Faturas antigas sem histórico de pagamento são exibidas como **não conciliadas** quando vencidas: não se presume que foram quitadas ou que estejam de fato em dívida.
+- Compras relacionadas a pagamentos já registrados não podem ser alteradas/excluídas até o registro de pagamento ser revertido.
+- Saldos são estimados com base nos registros efetivamente cadastrados. Recorrências previstas sem confirmação individual de pagamento permanecem uma limitação para reconciliação bancária completa.
+- O novo esquema é aditivo e não força migração destrutiva de cofre ou recategorização de `cash-default`.
+- Regressão: `tests/banking_v28.test.cjs`, `tests/finance_rules.test.cjs`, `tests/contract.test.cjs`, `tests/crypto.test.cjs`.
