@@ -48,7 +48,7 @@ function renderTaxonomy(){
    (TaxonomyRules.key(entry.name)!=='outros'?'<button type="button" class="btn small" data-tax-action="rename-cat" data-tax-category="'+esc(cat)+'">Renomear</button><button type="button" class="btn small danger" data-tax-action="delete-cat" data-tax-category="'+esc(cat)+'" '+(linked?'disabled title="Vinculada a lançamentos ou metas"':'')+'>Excluir</button>':'')+
    '</div></div><div class="taxonomy-subs">'+subs+'</div></details>';
  }).join('');
- $('#taxonomyList details.taxonomy-group').forEach(details=>{
+ $$('#taxonomyList details.taxonomy-group').forEach(details=>{
   details.ontoggle=()=>{if(!details.isConnected)return;const key=details.dataset.taxGroup;
    if(details.open)expandedTaxonomyGroups.add(key);else expandedTaxonomyGroups.delete(key)};
  });
