@@ -74,3 +74,11 @@ GitHub Pages é público, **somente código**. Não sincroniza saldos entre nave
 - `js/vendor/pdf.min.js` e `pdf.worker.min.js` são cópias fixadas PDF.js v2.8.335 (Apache-2.0), carregadas da mesma origem e pré-cacheadas no service worker. Nenhuma leitura usa bibliotecas de CDN.
 - `js/ui/importer.js` mantém resultados exclusivamente em memória, jamais chama `save()`, `writeVault()` ou APIs de upload. Prévia apenas: não prometer conciliação integral de faturas ou fechamento para PDFs sem datas completas e formatos não reconhecidos.
 - A validação deve conferir valores, data, fonte, totais e origem das operações antes de permitir importação efetiva numa versão posterior. Não criar automaticamente transações, transferências ou pagamentos.
+
+
+## V2.12 — Cruzamento conservador e checkpoints
+- `js/import/reconcile.js`: normaliza somente linhas já reconhecidas, propõe correspondências 1:1 para bancos distintos, alerta sobre saques, Pix, faturas, repetição entre arquivos e possíveis registros existentes. Não modifica saldos ou transações.
+- `js/ui/reconcile.js`: tela mensal com resumo por origem, lista de exceções e conferência de saldo bancário usando centavos inteiros. Sem conexão de rede.
+- `state.importCheckpoints[]`: resumos opcionais de conta/mês, salvos explicitamente no mesmo cofre AES-GCM, sem armazenar linhas ou anexos e sem impactar `FinanceRules`.
+- Fechamento parcial de banco é diferente de conciliação de toda a carteira: cartão, dinheiro físico, cobertura completa e classificação final permanecem pendentes até tratamento em etapas futuras.
+- Testes de correspondência ambiguidades 1:N, faturas não duplicadas, dinheiro físico, saldos exatos, proteção do histórico e revisão sem gravação.

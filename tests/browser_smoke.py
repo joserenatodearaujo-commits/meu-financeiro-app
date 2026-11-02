@@ -338,6 +338,27 @@ def test_import_http(browser):
         assert p.evaluate('state.transfers.length')==0, 'A leitura não pode criar transferências'
         assert p.locator('#importResults').get_by_text('2026-10',exact=True).count()>=1
         assert p.locator('#importResults [data-import-source]').count()==3
+        # V2.12: revisão mensal e conferência independente de saldo bancário.
+        assert p.locator('#importReview').get_by_text('Conciliação e fechamento por mês').count()==1
+        assert p.locator('#reconcileMonth').input_value()=='2026-10'
+        assert p.locator('#importReview').get_by_text('Saque / espécie',exact=False).count()>=1
+        assert p.evaluate('state.importCheckpoints.length')==0
+        p.locator('#reconcileOpening').fill('100,00')
+        p.locator('#reconcileClosing').fill('175,01')
+        p.locator('#reconcileCoverage').check()
+        p.locator('#reconcileCheck').click()
+        assert 'Diferença' in p.locator('#reconcileMessage').inner_text()
+        p.locator('#reconcileSave').click()
+        assert p.evaluate('state.importCheckpoints.length')==0, 'Diferença de 1 centavo deve bloquear gravação'
+        p.locator('#reconcileClosing').fill('175,00')
+        p.locator('#reconcileCheck').click()
+        assert 'Saldo bancário conferido' in p.locator('#reconcileMessage').inner_text()
+        p.once('dialog',lambda dialog:dialog.accept())
+        p.locator('#reconcileSave').click()
+        p.wait_for_function("state.importCheckpoints.length===1")
+        assert p.evaluate('state.transactions.length')==0, 'Checkpoint não cria despesas ou receitas'
+        assert p.evaluate('state.transfers.length')==0, 'Checkpoint não cria transferências'
+        assert p.evaluate('state.importCheckpoints[0].closing')==17500
         p.locator('#importClear').click()
         assert p.evaluate('importSession.files.length')==0
         assert p.evaluate('state.transactions.length')==0

@@ -53,7 +53,7 @@ function renderImport(){
  $('#importClear').disabled=importSession.reading||!files.length;
  $('#importAnalyze').disabled=importSession.reading;
  $('#importAnalyze').textContent=importSession.reading?'Analisando localmente…':'Ler e organizar os arquivos';
- if(!files.length){target.innerHTML='<p class="empty">Selecione arquivos PDF, CSV ou TXT. A prévia é local e não altera o cofre.</p>';return}
+ if(!files.length){target.innerHTML='<p class="empty">Selecione arquivos PDF, CSV ou TXT. A prévia é local e não altera o cofre.</p>';renderImportReconciliation();return}
  const summaries=ImportRules.monthly(files);
  const totals={read:files.filter(f=>f.status==='ok').length,rows:files.reduce((n,f)=>n+f.rows.length,0),issues:files.reduce((n,f)=>n+f.unreadable.length,0)+files.filter(f=>f.status!=='ok').length};
  const missingSource=files.filter(f=>f.status==='ok'&&!ImportRules.source(f.source)).length;
@@ -80,7 +80,8 @@ function renderImport(){
  '<p class="notice warning">Esta é uma <b>prévia de leitura</b>, não uma conciliação aprovada. Não se somam compras de cartões com saídas bancárias. Nenhuma movimentação foi gravada ou enviada. '+(missingSource?'Há '+missingSource+' arquivo(s) sem origem atribuída.':'')+'</p>'+
  '<h3>Resumo preliminar por mês</h3>'+monthTable+
  '<h3>Prévia de cada arquivo</h3>'+cards+
- '<p class="muted">A correlação entre transferências, pagamentos de faturas, duplicidades e o fechamento definitivo será habilitada somente depois de validar os layouts e as regras. PDFs digitalizados ou datas incompletas exigem revisão.</p>';
+ '<p class="muted">Revise a conciliação provisória abaixo. PDFs digitalizados ou datas incompletas exigem conferência.</p>';
+ renderImportReconciliation();
 }
 async function importAnalyzeFiles(){
  if(importSession.reading)return;
