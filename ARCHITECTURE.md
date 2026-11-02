@@ -82,3 +82,16 @@ GitHub Pages é público, **somente código**. Não sincroniza saldos entre nave
 - `state.importCheckpoints[]`: resumos opcionais de conta/mês, salvos explicitamente no mesmo cofre AES-GCM, sem armazenar linhas ou anexos e sem impactar `FinanceRules`.
 - Fechamento parcial de banco é diferente de conciliação de toda a carteira: cartão, dinheiro físico, cobertura completa e classificação final permanecem pendentes até tratamento em etapas futuras.
 - Testes de correspondência ambiguidades 1:N, faturas não duplicadas, dinheiro físico, saldos exatos, proteção do histórico e revisão sem gravação.
+
+
+## V2.15 — sincronização automática (Android primeiro)
+
+- **Sem aba de sincronização.** O único passo necessário é vincular uma conta no acesso normal do aplicativo para que o Supabase saiba que dois navegadores pertencem ao mesmo usuário. Não é possível reconhecer o mesmo usuário em dois dispositivos sem uma autenticação inicial. Após a vinculação, o aplicativo salva e recebe revisões automaticamente enquanto estiver aberto, desbloqueado e conectado.
+- O **Android com lançamentos** é a única origem que pode criar a primeira revisão em uma nuvem vazia. O desktop não tem permissão no cliente para publicar sua base de testes como oficial. O servidor rejeita atualizações obsoletas por CAS.
+- No primeiro acesso do desktop conectado à mesma conta, os dados de teste são colocados em quarentena local criptografada e substituídos pela base oficial recebida. Se a senha do cofre Android for diferente, é solicitada uma única vez para abrir a cópia cifrada. Não há importação ou exportação de arquivos.
+- Após o vínculo inicial, é realizado **merge de registros por UUID** no cliente entre a última base confirmada, os dados locais e a versão mais recente no Supabase. A criptografia AES-GCM e formato do cofre V1 são mantidos; o servidor armazena apenas o envelope criptografado e metadados de revisão. Operações independentes convergem. Para alterações divergentes no MESMO registro, a cópia local e a remota permanecem preservadas e a sincronização fica bloqueada para reconciliação.
+- Uma cópia cifrada da base anterior, da base de comparação e de eventuais conflitos é guardada no IndexedDB. O status aparece discretamente na interface. Não há sincronização com o app fechado, nem garantia de conectividade em tempo real offline.
+- A sessão da conta de nuvem é armazenada no navegador e renovada via refresh token. Senha da conta de nuvem e senha do cofre são distintas; a senha do cofre não sai do dispositivo.
+- IMPORTANTE: a migração REAL do Android não é executada automaticamente por ChatGPT. É preciso entrar uma vez na conta da nuvem no próprio Android e depois no desktop. Não importar extratos reais antes de verificar que ambos apresentam os mesmos lançamentos e saldos.
+- Segurança: nunca incluir service_role, credenciais pessoais, arquivos bancários ou backups reais no repositório. Somente chave publishable.
+- Testes automáticos: merge 3 vias por UUID, simultaneidade, offline, conflitos, criptografia e interface. O backend mantém funções RPC por usuário e CAS atômico. O CI usa MOCK de servidor em navegadores; o teste operacional com a conta real do usuário deve ser verificado no próprio dispositivo.

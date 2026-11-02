@@ -26,6 +26,8 @@ jobs:
         run: node tests/import_rules.test.cjs
       - name: Conciliacao cruzada e fechamento bancario
         run: node tests/reconcile_rules.test.cjs
+      - name: Regras de fusao de dados entre dispositivos
+        run: node tests/auto_sync_rules.test.cjs
       - name: Criptografia e compatibilidade de cofres
         run: node tests/crypto.test.cjs
       - name: Preparar navegador de testes
@@ -35,3 +37,5 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Testar fluxos Android e desktop
         run: python tests/browser_smoke.py
+      - name: Sincronizacao automatica Android e desktop, offline e conflitos
+        run: python tests/auto_sync_browser.py
