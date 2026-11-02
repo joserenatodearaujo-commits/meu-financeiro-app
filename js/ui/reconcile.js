@@ -26,7 +26,7 @@ function renderImportReconciliation(){
  const bank=monthly.filter(x=>x.kind==='bank');
  const banks=bank.length?'<div class="field"><label for="reconcileBankSource">Conta a conferir</label><select id="reconcileBankSource">'+
   bank.map(x=>'<option value="'+esc(x.source)+'">'+esc(ImportRules.source(x.source)?.label||x.source)+'</option>').join('')+'</select></div>'+
-  '<div class="formgrid reconcile-inputs"><div class="field"><label for="reconcileOpening">Saldo em '+esc(selected)+'-01 (R$)</label>'+
+  '<div class="formgrid reconcile-inputs"><div class="field"><label for="reconcileOpening">Saldo de abertura do mês, antes das movimentações (R$)</label>'+
   '<input type="text" id="reconcileOpening" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>'+
   '<div class="field"><label for="reconcileClosing">Saldo no último dia do mês (R$)</label>'+
   '<input type="text" id="reconcileClosing" inputmode="decimal" placeholder="0,00" autocomplete="off"></div></div>'+
