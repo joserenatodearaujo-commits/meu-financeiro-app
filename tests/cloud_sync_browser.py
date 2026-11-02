@@ -73,7 +73,7 @@ def run():
                 page.locator('#cloudEmail').fill('finance-test@example.org')
                 page.locator('#cloudPassword').fill('SenhaNuvem2026!!')
                 page.locator('#cloudLogin').click()
-                page.wait_for_function("cloudState.userId!==null",timeout=10000)
+                page.wait_for_function("typeof cloudState!=='undefined' && cloudState.userId!==null",timeout=10000)
             ctx_android,android,err_android=create_page(True)
             android.evaluate("""async()=>{
               state.accounts=[{id:'conta-android',name:'Conta de teste Android',type:'bank'}];
@@ -81,7 +81,9 @@ def run():
                 purchaseDate:'2026-10-26',paymentDate:'2026-10-26'}];
               await save();
             }""")
+            print('DEBUG before login',android.evaluate("({cloud:typeof cloudState, init:typeof cloudInit, url:location.href, bound:!!document.querySelector('#cloudLoginForm').onsubmit})"),err_android,flush=True)
             cloud_login(android)
+            print('DEBUG after login',android.evaluate("({cloud:typeof cloudState, url:location.href, text:document.querySelector('#cloudStatus')?.textContent})"),err_android,flush=True)
             assert backend.revision==0,'login must not upload Android data automatically'
             android.locator('#cloudAndroidConfirm').check()
             android.once('dialog',lambda d:d.accept())
