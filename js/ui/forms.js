@@ -35,8 +35,8 @@ const field=(name,label,value='',type='text',rest='')=>`<div class="field"><labe
   });
  const typeselect=$('#accountType'),setFields=()=>{
   const card=typeselect.value==='card';
-  $('.account-opening').forEach(e=>{e.hidden=card;e.querySelectorAll('input').forEach(i=>i.disabled=card)});
-  $('.account-card').forEach(e=>{e.hidden=!card;e.querySelectorAll('input').forEach(i=>i.disabled=!card)});
+  document.querySelectorAll('.account-opening').forEach(e=>{e.hidden=card;e.querySelectorAll('input').forEach(i=>i.disabled=card)});
+  document.querySelectorAll('.account-card').forEach(e=>{e.hidden=!card;e.querySelectorAll('input').forEach(i=>i.disabled=!card)});
  };
  typeselect.onchange=setFields;setFields();
 }
