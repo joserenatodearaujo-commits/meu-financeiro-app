@@ -35,5 +35,3 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Testar fluxos Android e desktop
         run: python tests/browser_smoke.py
-      - name: Testar sincronização criptografada entre dois dispositivos
-        run: python tests/cloud_sync_browser.py

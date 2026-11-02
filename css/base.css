@@ -98,20 +98,3 @@ input::placeholder,textarea::placeholder{color:#697586;opacity:1;-webkit-text-fi
 .reconcile-check input{width:20px;height:20px;min-width:20px;margin:0}
 #reconcileMessage{margin:8px 0 14px}
 @media(max-width:540px){.reconcile-inputs{grid-template-columns:1fr}.import-reconcile-section .sectionrow{align-items:start}}
-
-/* V2.13 — transição segura de cofre entre dispositivos, sem sincronização implícita. */
-#sync h3{font-size:16px;margin-top:24px}
-#sync .field input[type=file]{max-width:100%;width:100%;padding:10px}
-#sync .field input[type=password]{width:100%}
-#deviceTransferPreview,#deviceTransferStatus{overflow-wrap:anywhere}
-#sync .actions{margin:11px 0}
-#sync .formgrid{max-width:700px}
-@media(max-width:620px){#sync .formgrid{grid-template-columns:1fr}#sync .actions .btn{max-width:100%;white-space:normal;text-align:center}}
-
-/* V2.14 — status da nuvem e confirmação da origem Android. */
-#cloudLoginForm{max-width:750px;margin:14px 0}
-#cloudStatus,#cloudConnected,#cloudRemote{overflow-wrap:anywhere}
-#cloudVaultPassword{width:100%;max-width:450px}
-#cloudPublishAndroid,#cloudReceiveDesktop{max-width:100%;white-space:normal}
-#sync #cloudLoginForm .btn{align-self:end}
-@media(max-width:520px){#cloudLoginForm{grid-template-columns:1fr}#cloudLoginForm .btn{width:100%}}

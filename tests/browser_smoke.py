@@ -300,72 +300,6 @@ def test_one(browser,modular,width):
     p.close()
     return result
 
-def test_android_priority_transfer(browser):
-    # Simula cofres completamente distintos sem usar nenhum arquivo pessoal real.
-    from functools import partial
-    from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-    from threading import Thread
-    import json
-    class Quiet(SimpleHTTPRequestHandler):
-        def log_message(self,*args): pass
-    srv=ThreadingHTTPServer(('127.0.0.1',0),partial(Quiet,directory=str(ROOT)))
-    Thread(target=srv.serve_forever,daemon=True).start()
-    try:
-        p=browser.new_page(viewport={'width':390,'height':790},service_workers='block',accept_downloads=True)
-        errs=[];p.on('pageerror',lambda e:errs.append(str(e)))
-        p.add_init_script(MOCK)
-        p.goto('http://127.0.0.1:'+str(srv.server_port)+'/index.html',wait_until='domcontentloaded')
-        p.locator('#pass').fill('SenhaDesktop2026!')
-        p.locator('#passConfirm').fill('SenhaDesktop2026!')
-        p.locator('#authButton').click()
-        p.locator('#app:not(.hide)').wait_for(timeout=8000)
-        p.evaluate("""async()=>{
-          state.accounts=[{id:'teste-desktop',name:'Conta teste desktop',type:'bank'}];
-          state.transactions=[{id:'fake-desktop',type:'expense',description:'Despesa fictícia desktop',amount:999,purchaseDate:'2026-10-01',paymentDate:'2026-10-01'}];
-          await save();
-        }""")
-        p.locator('[data-page="sync"]').click()
-        assert p.get_by_text('Sincronização automática ainda não está ativa.',exact=False).count()>0
-        with p.expect_download() as d:
-            p.locator('#deviceTransferDesktopBackup').click()
-        download=d.value
-        assert download.suggested_filename.startswith('meu-financeiro-copia-desktop-antes-da-migracao-')
-        p.locator('#deviceTransferSavedCopy').check()
-        # Fonte Android fictícia e claramente diferente do desktop.
-        source=p.evaluate("""async()=>{
-          const data=plain();
-          data.accounts=[{id:'banco-android',name:'Banco real fictício',type:'bank'}];
-          data.transactions=[{id:'android-1',type:'expense',description:'Compra de teste Android',amount:17.25,
-          purchaseDate:'2026-10-26',paymentDate:'2026-10-26'}];
-          return await encryptData(data,'SenhaAndroid2026!',b64(crypto.getRandomValues(new Uint8Array(16))));
-        }""")
-        p.locator('#deviceTransferFile').set_input_files([{
-            'name':'meu-financeiro-android.json','mimeType':'application/json',
-            'buffer':json.dumps(source).encode('utf-8')
-        }])
-        p.locator('#deviceTransferPassword').fill('SenhaAndroid2026!')
-        p.locator('#deviceTransferInspect').click()
-        p.wait_for_function("document.querySelector('#deviceTransferPreview').textContent.includes('1 lançamentos')")
-        assert p.evaluate('state.transactions[0].id')=='fake-desktop','Preview cannot overwrite local vault'
-        p.locator('#deviceTransferApply').click()
-        assert p.evaluate('state.transactions[0].id')=='fake-desktop','No Android confirmation: must not overwrite'
-        p.locator('#deviceTransferAndroidSource').check()
-        p.once('dialog',lambda d:d.accept())
-        p.locator('#deviceTransferApply').click()
-        p.wait_for_function("state.transactions[0]?.id==='android-1'",timeout=10000)
-        assert p.evaluate('state.transactions.length')==1, 'Desktop tests must not merge'
-        assert p.evaluate('passphrase')=='SenhaAndroid2026!'
-        assert p.evaluate('state.accounts[0].id')=='banco-android'
-        assert p.locator('#deviceTransferStatus').inner_text().find('MANUAL')>=0
-        assert p.evaluate('document.querySelector("#deviceTransferPassword").value')==''
-        assert p.evaluate('readVault().then(v=>v.schema)')=='meu-financeiro-encrypted-v1'
-        assert not errs,errs
-        p.close()
-        print('PASS ANDROID PRIORITY encrypted backup, desktop safeguard, no automatic cloud')
-    finally:
-        srv.shutdown()
-        srv.server_close()
-
 def test_import_http(browser):
     from functools import partial
     from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -447,5 +381,4 @@ if __name__=='__main__':
                 except Exception as e:
                     print('FAIL',('MODULAR' if modular else 'BASELINE'),w,str(e));raise
         test_import_http(b)
-        test_android_priority_transfer(b)
         b.close()
