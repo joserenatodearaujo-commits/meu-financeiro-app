@@ -89,7 +89,16 @@ function guessAmountDetailed(txt){
 function guessAmount(txt){return guessAmountDetailed(txt).value;}
 
 function autoClassify(text){
- const t=simplify(text); const checks=[
+ const t=simplify(text);
+ // Subcategorias do usuário têm prioridade quando seus nomes aparecem na descrição.
+ const custom=taxonomyCatalog().entries.flatMap(c=>subcategoryList(c.name).filter(sub=>
+  sub.length>=4&&!['diversos','outros'].includes(simplify(sub))&&
+  !(microbes[c.name]||[]).some(x=>TaxonomyRules.key(x)===TaxonomyRules.key(sub))
+ ).map(sub=>({macro:c.name,micro:sub,label:simplify(sub)})));
+ custom.sort((a,b)=>b.label.length-a.label.length);
+ const matched=custom.find(c=>(' '+t+' ').includes(' '+c.label+' ')||t===c.label);
+ if(matched)return {macro:matched.macro,micro:matched.micro};
+ const checks=[
   ['Transporte','Combustível',/combust|abastec|gasolina|etanol|diesel|posto de /],
   ['Transporte','Manutenção',/mecanico|oficina|pneu|revisao|oleo de motor/],
   ['Alimentação','Supermercado',/supermercado|mercado|atacadao|mercearia|compras do mes/],
@@ -101,7 +110,7 @@ function autoClassify(text){
   ['Educação','Escola',/escola|mensalidade escolar/],['Educação','Cursos',/curso|faculdade/],
   ['Lazer','Assinaturas',/netflix|spotify|assinatura|streaming/],['Lazer','Viagens',/viagem|hotel|passagem/],
   ['Família','Vestuário',/roupa|calcado|tenis/],['Financeiro','Juros',/juros|multa|encargos/]
- ];for(const [macro,micro,re] of checks)if(re.test(t))return {macro,micro};return {macro:'Outros',micro:'Diversos'};
+ ];for(const [macro,micro,re] of checks)if(re.test(t)&&TaxonomyRules.find(taxonomyCatalog(),macro)&&subcategoryList(macro).includes(micro))return {macro,micro};return {macro:'Outros',micro:'Diversos'};
 }
 function extractLocal(text,fromPhoto=false){
  const norm=simplify(text),today=agentDate(),detectedAmount=guessAmountDetailed(text);let value=detectedAmount.value;

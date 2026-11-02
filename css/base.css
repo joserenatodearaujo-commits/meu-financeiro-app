@@ -20,3 +20,15 @@ input::placeholder,textarea::placeholder{color:#697586;opacity:1;-webkit-text-fi
 #invoiceTable .btn{margin:2px}
 
 #agentAccountField[hidden]{display:none!important}
+
+/* V2.9 — classificação financeira: gerenciamento responsivo */
+.taxonomy-group{border:1px solid var(--border,#e1e5eb);border-radius:12px;padding:12px;margin:12px 0}
+.taxonomy-group .sectionrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.taxonomy-buttons{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
+.taxonomy-subs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:5px;margin-top:10px}
+.taxonomy-sub{display:flex;align-items:center;justify-content:space-between;gap:8px;border-radius:8px;background:var(--card,#f5f6f9);padding:7px;min-width:0;flex-wrap:wrap}
+.taxonomy-sub>span:first-child{min-width:0;overflow-wrap:anywhere}
+.taxonomy-sub .btn{font-size:11px}
+.taxonomy-subcontrol{display:flex;flex-direction:column;gap:6px}
+.taxonomy-subcontrol [hidden]{display:none!important}
+@media(max-width:410px){.taxonomy-subs{grid-template-columns:1fr}.taxonomy-group{padding:9px}.taxonomy-buttons .btn{min-height:34px}}

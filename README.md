@@ -52,3 +52,9 @@ GitHub Pages: branch `main`, raiz `/`. O SW pré-armazena todos os arquivos HTML
 - Faturas históricas sem pagamento registrado devem ser conciliadas; não são automaticamente marcadas como pagas.
 - Saldos são estimados a partir dos dados lançados. Receitas e gastos recorrentes previstos ainda não têm confirmação de liquidação individual e podem diferir do extrato bancário real.
 - Sua senha e biometria continuam as mesmas; todos os dados permanecem no cofre local criptografado. Não limpe os dados do navegador sem backup.
+
+
+### Categorias e subcategorias (V2.9)
+Em **Configurações → Categorias e subcategorias**, adicione categorias, crie subcategorias e faça edições. No lançamento tradicional ou no card do assistente, a subcategoria aparece como uma lista dependente da categoria selecionada; use **+ Nova subcategoria** quando necessário. O reconhecimento de texto/voz também consulta as subcategorias personalizadas.
+
+As classificações de lançamentos antigos permanecem intactas e são incorporadas à lista na primeira abertura do cofre atualizado. Para não quebrar os relatórios e metas, categorias ou subcategorias vinculadas ao histórico só podem ser renomeadas/excluídas depois de reclassificar os registros correspondentes.

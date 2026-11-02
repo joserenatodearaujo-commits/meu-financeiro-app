@@ -69,6 +69,36 @@ def test_one(browser,modular,width):
     p.locator('#authButton').click()
     p.locator('#app:not(.hide)').wait_for(timeout=8000)
     assert not errors,errors
+    # V2.9: catálogo central, novas categorias, subcategoria vinculada e classificação por voz/texto.
+    p.locator('[data-page="config"]').click()
+    assert p.locator('#taxonomyList .taxonomy-group').count()==9
+    p.locator('#newTaxCategory').click()
+    p.locator('#modalForm input[name="taxName"]').fill('Pets')
+    p.locator('#modalForm button[type="submit"]').click()
+    p.locator('#taxonomyList').get_by_text('Pets',exact=True).wait_for()
+    p.locator('[data-tax-action="add-sub"][data-tax-category="Pets"]').click()
+    p.locator('#modalForm input[name="taxName"]').fill('Ração')
+    p.locator('#modalForm button[type="submit"]').click()
+    assert p.evaluate("subcategoryList('Pets').includes('Ração')")
+    # Formulário tradicional: as opções dependem da categoria.
+    p.locator('#newEntry').click()
+    p.locator('#agentTraditional').click()
+    p.locator('#modalForm select[name="macro"]').select_option('Pets')
+    assert 'Ração' in p.locator('#modalForm select[name="micro"]').inner_text()
+    p.locator('#modalForm [data-inline-sub]').click()
+    assert p.locator('#modalForm input[name="newMicro"]').is_visible()
+    p.locator('#modalForm input[name="newMicro"]').fill('Banho e tosa')
+    p.locator('#cancelModal').click()
+    # Assistente: o catálogo do usuário também influencia a interpretação de texto/voz.
+    p.locator('#newEntry').click()
+    p.locator('#agentText').fill('Gastei 80 reais de ração no Pix hoje')
+    p.locator('#modalForm button[type="submit"]').click()
+    assert p.locator('#modalForm select[name="macro"]').input_value()=='Pets'
+    assert p.locator('#modalForm select[name="micro"]').input_value()=='Ração'
+    p.locator('#cancelModal').click()
+    assert p.evaluate('state.transactions.length')==0
+    # Persistência: o catálogo continua no mesmo cofre, compatível com o desbloqueio.
+    assert p.evaluate("state.taxonomy.entries.some(x=>x.name==='Pets'&&x.subcategories.includes('Ração'))")
     # Goal UI: overrides, save and period aggregation.
     p.locator('[data-page="metas"]').click()
     p.locator('#newGoal').click()

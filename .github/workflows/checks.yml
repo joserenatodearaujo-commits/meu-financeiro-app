@@ -20,6 +20,8 @@ jobs:
         run: node tests/finance_rules.test.cjs
       - name: Testar contas, faturas e conciliação
         run: node tests/banking_v28.test.cjs
+      - name: Testar cadastro centralizado de categorias
+        run: node tests/taxonomy.test.cjs
       - name: Criptografia e compatibilidade de cofres
         run: node tests/crypto.test.cjs
       - name: Preparar navegador de testes

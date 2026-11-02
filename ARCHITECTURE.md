@@ -51,3 +51,12 @@ GitHub Pages é público, **somente código**. Não sincroniza saldos entre nave
 - Saldos são estimados com base nos registros efetivamente cadastrados. Recorrências previstas sem confirmação individual de pagamento permanecem uma limitação para reconciliação bancária completa.
 - O novo esquema é aditivo e não força migração destrutiva de cofre ou recategorização de `cash-default`.
 - Regressão: `tests/banking_v28.test.cjs`, `tests/finance_rules.test.cjs`, `tests/contract.test.cjs`, `tests/crypto.test.cjs`.
+
+
+## V2.9 — Catálogo centralizado
+- Adiciona `state.taxonomy = {version:1,entries:[{name,subcategories}]}` opcional ao cofre local, sem alterar IndexedDB, PBKDF2, AES-GCM ou formato de movimentações antigas.
+- Na abertura de cofre legado, `ensureTaxonomy` carrega as categorias base e incorpora classificações já utilizadas em lançamentos e metas, sem modificar ou renomear registros históricos.
+- `js/finance/taxonomy.js` é responsável por validação, unicidade, relações, bloqueio de renomear/excluir classificações em uso e catálogo dinâmico.
+- `js/ui/taxonomy.js` reúne gerenciamento, subcategorias dependentes da categoria e criação inline em lançamentos. O assistente de texto/voz e o editor tradicional usam a mesma fonte.
+- Registros relacionados a metas e movimentações bloqueiam exclusões/renomeações para não gerar dados órfãos; demais rótulos podem ser administrados.
+- `tests/taxonomy.test.cjs` valida migração, proteção histórica, inclusão, renomeação, exclusão e duplicidade; teste de interface cobre smartphone e desktop.

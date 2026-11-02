@@ -27,6 +27,6 @@ async function browserAI(text){
  const model=await globalThis.LanguageModel.create();
  try {const result=await model.prompt('Extraia APENAS um JSON de uma movimentação financeira em português: {"type":"expense|income|investment|transfer","description":"...","amount":number,"macro":"...","micro":"...","paymentMethod":"pix|cash|debit|credit|unspecified","installments":number}. Não invente valor. Frase: '+text);
  const json=String(result).match(/\{[\s\S]*\}/)?.[0];if(!json)return null;const o=JSON.parse(json);if(!o||typeof o!=='object'||!['expense','income','investment','transfer'].includes(o.type)||typeof o.description!=='string'||!Number.isFinite(Number(o.amount))||+o.amount<=0)return null;
- return {type:o.type,description:o.description.slice(0,120),amount:Number(o.amount),macro:categories.includes(o.macro)?o.macro:'Outros',micro:String(o.micro||'Diversos').slice(0,80),paymentMethod:['pix','cash','debit','credit','unspecified'].includes(o.paymentMethod)?o.paymentMethod:'unspecified',installments:Number.isInteger(+o.installments)&&+o.installments>=1&&+o.installments<=120?+o.installments:1};
+ return {type:o.type,description:o.description.slice(0,120),amount:Number(o.amount),macro:recognizedCategory(o.macro),micro:recognizedSubcategory(recognizedCategory(o.macro),o.micro),paymentMethod:['pix','cash','debit','credit','unspecified'].includes(o.paymentMethod)?o.paymentMethod:'unspecified',installments:Number.isInteger(+o.installments)&&+o.installments>=1&&+o.installments<=120?+o.installments:1};
  }finally{model.destroy?.()}
 }

@@ -3,7 +3,7 @@
 function openApproval(a){stopVoice();cleanAgentImage();
  const opts=(list,current)=>list.map(([v,label])=>`<option value="${esc(v)}" ${String(v)===String(current)?'selected':''}>${esc(label)}</option>`).join('');
  const as=(name,label,value,attrs='')=>`<div class="field"><label>${label}</label><input class="agent-input" name="${name}" value="${esc(value)}" ${attrs}></div>`;
- const catOpt=opts(categories.map(x=>[x,x]),a.macro);
+ const catOpt=opts(categoryList().map(x=>[x,x]),recognizedCategory(a.macro));
  const cards=state.accounts.filter(x=>x.type==='card');
  const pay=[['unspecified','Escolher pagamento'],['pix','Pix'],['cash','Dinheiro'],['debit','Cartão de débito'],['credit','Cartão de crédito']];
  const activeAccounts=state.accounts.filter(a=>a.type==='bank'||a.type==='cash');const accountOpts=opts(activeAccounts.map(x=>[x.id,x.name]),activeAccounts.find(x=>x.type===(a.paymentMethod==='cash'?'cash':'bank'))?.id||'cash-default');
@@ -16,7 +16,7 @@ function openApproval(a){stopVoice();cleanAgentImage();
  ${as('description','Descrição',a.description,'required maxlength="120"')}
  ${as('amount','Valor R$',a.amount||'','type="number" min="0.01" step="0.01" required')}
  <div class="field"><label>Macro</label><select name="macro">${catOpt}</select></div>
- ${as('micro','Microcategoria',a.micro,'required maxlength="80"')}
+ ${subcategoryField(a.macro,a.micro)}
  ${as('purchaseDate','Data da compra',a.purchaseDate,'type="date" required')}
  ${as('paymentDate','Data do desembolso',a.paymentDate,'type="date" required')}
  <div class="field"><label>Pagamento</label><select name="paymentMethod">${opts(pay,a.paymentMethod)}</select></div>
@@ -41,7 +41,7 @@ function openApproval(a){stopVoice();cleanAgentImage();
  if(tx.type==='investment'){tx.macro='Investimentos';tx.asset=tx.description;}
  const dup=state.transactions.some(t=>t.type===tx.type&&simplify(t.description)===simplify(tx.description)&&Math.abs(+t.amount-tx.amount)<0.001&&t.purchaseDate===tx.purchaseDate&&String(t.cardId||'')===String(tx.cardId||''));
  if(dup)throw Error('Possível lançamento duplicado encontrado. Confira o histórico antes de salvar.');
- const newState={...state,transactions:[...state.transactions,tx]};
+ const selected=chosenSubcategory(f,tx.macro);tx.micro=selected.micro;const newState={...state,taxonomy:selected.catalog,transactions:[...state.transactions,tx]};
  const encrypted=await encryptData(newState,passphrase,salt);
  await writeVault(encrypted); // gravação durável antes de atualizar interface
  const readback=await readVault(),decrypted=await decryptData(readback,passphrase);
@@ -62,6 +62,7 @@ function openApproval(a){stopVoice();cleanAgentImage();
   else $('#modalError').textContent='';
  };
  paymentSelect.onchange=syncAccount;syncAccount();
+ connectSubcategory($('#modalForm'),recognizedCategory(a.macro),a.micro);
  const action=$('#modalForm button[type="submit"]');action.textContent='✓ Confirmar e gravar';
  const amountBox=$('#modalForm input[name="amount"]');
  if(amountBox)amountBox.addEventListener('input',()=>{const v=Number(amountBox.value),preview=$('#modalForm .agent-value');if(preview)preview.textContent=Number.isFinite(v)&&v>0?fmt(v):'Valor a corrigir';const cb=$('#amountConfirmed');if(cb)cb.checked=false;});
