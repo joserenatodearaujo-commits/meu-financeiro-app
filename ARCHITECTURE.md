@@ -66,3 +66,11 @@ GitHub Pages é público, **somente código**. Não sincroniza saldos entre nave
 - `expandedAccountGroups` e `expandedTaxonomyGroups` mantêm apenas o estado de expansão enquanto a página está aberta; nenhuma estrutura do cofre é modificada.
 - Grupos de banco, espécie e crédito exibem valores derivados das regras financeiras preexistentes. Faturas, transferências e extratos continuam usando as mesmas consultas e ações.
 - A regressão de interface cobre inicialização, expandir/recolher, criação, troca de página, pagamentos e telas de 320 a 1280 px. Os testes financeiros e de criptografia continuam obrigatórios.
+
+
+## V2.11 — Importador em lote de leitura local
+- Aba separada `importacao`; entrada `#importFiles` com `multiple` para PDFs, CSV e TXT.
+- `js/import/parser.js` contém regras puras de reconhecimento de cabeçalhos CSV e linhas TXT/PDF, centavos inteiros, validações de datas e totais por tipo (conta/cartão).
+- `js/vendor/pdf.min.js` e `pdf.worker.min.js` são cópias fixadas PDF.js v2.8.335 (Apache-2.0), carregadas da mesma origem e pré-cacheadas no service worker. Nenhuma leitura usa bibliotecas de CDN.
+- `js/ui/importer.js` mantém resultados exclusivamente em memória, jamais chama `save()`, `writeVault()` ou APIs de upload. Prévia apenas: não prometer conciliação integral de faturas ou fechamento para PDFs sem datas completas e formatos não reconhecidos.
+- A validação deve conferir valores, data, fonte, totais e origem das operações antes de permitir importação efetiva numa versão posterior. Não criar automaticamente transações, transferências ou pagamentos.

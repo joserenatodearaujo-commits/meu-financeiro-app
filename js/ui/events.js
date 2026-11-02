@@ -1,5 +1,6 @@
 'use strict';
 // Meu Financeiro • Event wiring and user actions.
+initImporter();
 $$('.nav').forEach(b=>b.onclick=()=>page(b.dataset.page));$$('[data-go]').forEach(b=>b.onclick=()=>page(b.dataset.go));$('#month').onchange=e=>{if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value))return;selectedMonth=e.target.value;renderAll()};$('#periodMonths').onchange=e=>{const n=Number(e.target.value);if(![1,3,6,12].includes(n))return;periodMonths=n;renderAll()};$('#flowBasis').onchange=renderAll;$('#flowDepth').onchange=renderAll;$('#filterType').onchange=renderTx;$('#projHorizon').onchange=renderProjection;$('#newEntry').onclick=()=>openAgent();$('#newInvest').onclick=()=>entryForm(null,'investment');$('#newAccount').onclick=()=>accountForm();$('#newTransfer').onclick=transferForm;$('#newGoal').onclick=()=>goalForm();$('#newTaxCategory').onclick=()=>taxonomyForm('create');
 $('#accountExpandAll').onclick=()=>{$$('#accountsTable details.account-group').forEach(d=>{expandedAccountGroups.add(d.dataset.accountGroup);d.open=true})};
 $('#accountCollapseAll').onclick=()=>{$$('#accountsTable details.account-group').forEach(d=>{expandedAccountGroups.delete(d.dataset.accountGroup);d.open=false})};

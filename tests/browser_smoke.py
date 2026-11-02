@@ -19,6 +19,28 @@ def html_page(modular):
         html=re.sub(r'<script src="([^\"]+)"></script>',js_replace,html)
     return html
 
+def fake_financial_pdf():
+    # PDF vetorial mínimo com texto fictício. Nenhuma informação bancária real.
+    content=b"BT /F1 12 Tf 70 700 Td (12/10/2026 PADARIA TESTE 50,00) Tj ET"
+    objs=[
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        b"<< /Length "+str(len(content)).encode()+b" >>\nstream\n"+content+b"\nendstream",
+    ]
+    data=b"%PDF-1.4\n"
+    offsets=[0]
+    for i,obj in enumerate(objs,1):
+        offsets.append(len(data))
+        data+=str(i).encode()+b" 0 obj\n"+obj+b"\nendobj\n"
+    xref=len(data)
+    data+=b"xref\n0 6\n0000000000 65535 f \n"
+    for p in offsets[1:]:
+        data+=f"{p:010d} 00000 n \n".encode()
+    data+=b"trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n"+str(xref).encode()+b"\n%%EOF"
+    return data
+
 MOCK = r'''() => {
   Object.defineProperty(window,'isSecureContext',{configurable:true,get:()=>true});
   const native=window.crypto;
@@ -278,6 +300,54 @@ def test_one(browser,modular,width):
     p.close()
     return result
 
+def test_import_http(browser):
+    from functools import partial
+    from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+    from threading import Thread
+    class SilentHandler(SimpleHTTPRequestHandler):
+        def log_message(self, *args): pass
+    server=ThreadingHTTPServer(('127.0.0.1',0),partial(SilentHandler,directory=str(ROOT)))
+    Thread(target=server.serve_forever,daemon=True).start()
+    try:
+        p=browser.new_page(viewport={'width':390,'height':790},service_workers='block')
+        errors=[]
+        p.on('pageerror',lambda e:errors.append(str(e)))
+        p.add_init_script(MOCK)
+        p.goto('http://127.0.0.1:'+str(server.server_port)+'/index.html',wait_until='domcontentloaded')
+        p.locator('#pass').fill('SenhaTestes2026!')
+        p.locator('#passConfirm').fill('SenhaTestes2026!')
+        p.locator('#authButton').click()
+        p.locator('#app:not(.hide)').wait_for(timeout=8000)
+        # V2.11: seleção múltipla, importação 100% local e PDF.js empacotado.
+        p.locator('[data-page="importacao"]').click()
+        assert p.locator('#importFiles').get_attribute('multiple') is not None
+        p.locator('#importFiles').set_input_files([
+            {'name':'Inter_Conta_10-2026.csv','mimeType':'text/csv',
+             'buffer':b'Data Lancamento;Historico;Valor\n10/10/2026;PIX RECEBIDO;100,00\n11/10/2026;COMPRA MERCADO;-25,00'},
+            {'name':'Itau_Conta_10-2026.txt','mimeType':'text/plain',
+             'buffer':b'11/10/2026 SAQUE EM DINHEIRO -60,00'},
+            {'name':'Santander_Cartao_10-2026.pdf','mimeType':'application/pdf','buffer':fake_financial_pdf()},
+        ])
+        p.locator('#importAnalyze').click()
+        p.wait_for_function("document.querySelector('#importStatus').textContent.includes('Leitura local concluída')",timeout=30000)
+        assert p.evaluate('importSession.files.length')==3
+        assert p.evaluate('importSession.files.find(x=>x.type==="csv").rows.length')==2
+        assert p.evaluate('importSession.files.find(x=>x.type==="txt").rows.length')==1
+        assert p.evaluate('importSession.files.find(x=>x.type==="pdf").rows.length')==1, p.locator('#importResults').inner_text()
+        assert p.evaluate('state.transactions.length')==0, 'A leitura não pode gravar lançamentos'
+        assert p.evaluate('state.transfers.length')==0, 'A leitura não pode criar transferências'
+        assert p.locator('#importResults').get_by_text('2026-10',exact=True).count()>=1
+        assert p.locator('#importResults [data-import-source]').count()==3
+        p.locator('#importClear').click()
+        assert p.evaluate('importSession.files.length')==0
+        assert p.evaluate('state.transactions.length')==0
+        assert not errors,errors
+        p.close()
+        print('PASS IMPORT HTTP PDF real, CSV e TXT; leitura local sem gravar dados')
+    finally:
+        server.shutdown()
+        server.server_close()
+
 if __name__=='__main__':
     with sync_playwright() as sp:
         exe='/usr/bin/chromium' if Path('/usr/bin/chromium').exists() else None
@@ -289,4 +359,5 @@ if __name__=='__main__':
                     print('PASS',('MODULAR' if modular else 'BASELINE'),w,r)
                 except Exception as e:
                     print('FAIL',('MODULAR' if modular else 'BASELINE'),w,str(e));raise
+        test_import_http(b)
         b.close()

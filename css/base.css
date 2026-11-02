@@ -63,3 +63,21 @@ input::placeholder,textarea::placeholder{color:#697586;opacity:1;-webkit-text-fi
  .account-group .disclosure-content{padding:0 8px 10px}
  .taxonomy-group>summary{font-size:14px}
 }
+
+/* V2.11 — área de importação local, responsiva e somente leitura. */
+.import-actions{margin:13px 0}
+#importFiles{width:100%;max-width:100%;padding:12px;border:1px dashed #9daaba;background:#f7fafc}
+.import-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:14px 0}
+.import-summary>span{background:#eef3f7;border-radius:9px;padding:11px;font-size:12px;color:#3d5266}
+.import-summary b{font-size:18px;display:block;color:#213548}
+.import-file-group{border:1px solid var(--line);border-radius:10px;background:white;margin:10px 0;min-width:0}
+.import-file-group>summary{cursor:pointer;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;overflow-wrap:anywhere}
+.import-file-group>summary:focus-visible{outline:2px solid #338ce5}
+.import-file-body{padding:0 12px 12px;min-width:0}
+.import-file-source{max-width:370px;margin:9px 0}
+.import-file-group .tablewrap{width:100%;overflow:auto}
+.import-unreadable{margin:12px 0;font-size:12px;overflow-wrap:anywhere}
+.import-unreadable li{margin:6px 0}
+#importResults h3{font-size:15px;margin:18px 0 8px}
+#importResults .tablewrap table{min-width:550px}
+@media(max-width:600px){.import-summary{grid-template-columns:1fr}.import-summary b{display:inline;margin-right:5px}.import-file-group>summary{font-size:13px}}

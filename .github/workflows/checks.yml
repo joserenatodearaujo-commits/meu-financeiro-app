@@ -22,6 +22,8 @@ jobs:
         run: node tests/banking_v28.test.cjs
       - name: Testar cadastro centralizado de categorias
         run: node tests/taxonomy.test.cjs
+      - name: Importador local (CSV, TXT, PDF e segurança)
+        run: node tests/import_rules.test.cjs
       - name: Criptografia e compatibilidade de cofres
         run: node tests/crypto.test.cjs
       - name: Preparar navegador de testes

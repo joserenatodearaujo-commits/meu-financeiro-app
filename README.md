@@ -62,3 +62,10 @@ As classificações de lançamentos antigos permanecem intactas e são incorpora
 ### Organização da tela (V2.10)
 Em **Contas e cartões**, as contas bancárias, carteiras físicas e cartões de crédito aparecem em grupos expansíveis, com quantidade de cadastros e total estimado. Use **Expandir grupos** e **Recolher grupos** para alternar todos. Faturas, transferências e extratos têm seus próprios cabeçalhos expansíveis.
 Em **Configurações → Categorias e subcategorias**, toque no nome de uma categoria para expandir as subcategorias; use **Expandir todas** ou **Recolher todas** para visualizar rapidamente o catálogo. As escolhas de expansão são mantidas durante a navegação da sessão, mas não são gravadas no cofre.
+
+
+### V2.11 — Importação local em lote (prévia)
+A aba **Importação e conciliação** oferece seleção múltipla simultânea para PDFs digitais de cartões Santander/Inter/Mercado Pago, CSV de conta Inter e TXT de conta Itaú. O processamento do arquivo é feito no navegador: o código do PDF.js está fixado e servido na mesma origem, com seu worker local. Nenhum arquivo é enviado para o ChatGPT, Supabase ou GitHub; a prévia é temporária e não é persistida no cofre.
+Após leitura, o usuário escolhe a origem de cada documento, revisa as linhas reconhecidas e encontra um resumo preliminar por mês, separado por contas e cartões. **O importador ainda não grava registros ou fecha meses**: formatos ainda não reconhecidos, faturas com datas sem ano, PDFs digitalizados e pagamentos potencialmente duplicados ficam pendentes até que leitores específicos e o motor de conciliação sejam validados. Não trate totais de cartões como saídas de contas.
+Limites operacionais: 100 arquivos por sessão, 20 MB por arquivo, 100 MB por lote, máximo de 150 páginas por PDF e até 60.000 linhas de texto delimitado por arquivo. Use **Limpar prévia** ou bloqueie o cofre para descartar a seleção. Os arquivos originais não são gravados no aplicativo.
+O leitor PDF incluído em `js/vendor` é PDF.js v2.8.335, distribuído sob licença Apache-2.0 conforme os avisos preservados nos bundles. Em manutenção futura, revisar atualizações de segurança da biblioteca.
