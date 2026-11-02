@@ -58,3 +58,7 @@ GitHub Pages: branch `main`, raiz `/`. O SW pré-armazena todos os arquivos HTML
 Em **Configurações → Categorias e subcategorias**, adicione categorias, crie subcategorias e faça edições. No lançamento tradicional ou no card do assistente, a subcategoria aparece como uma lista dependente da categoria selecionada; use **+ Nova subcategoria** quando necessário. O reconhecimento de texto/voz também consulta as subcategorias personalizadas.
 
 As classificações de lançamentos antigos permanecem intactas e são incorporadas à lista na primeira abertura do cofre atualizado. Para não quebrar os relatórios e metas, categorias ou subcategorias vinculadas ao histórico só podem ser renomeadas/excluídas depois de reclassificar os registros correspondentes.
+
+### Organização da tela (V2.10)
+Em **Contas e cartões**, as contas bancárias, carteiras físicas e cartões de crédito aparecem em grupos expansíveis, com quantidade de cadastros e total estimado. Use **Expandir grupos** e **Recolher grupos** para alternar todos. Faturas, transferências e extratos têm seus próprios cabeçalhos expansíveis.
+Em **Configurações → Categorias e subcategorias**, toque no nome de uma categoria para expandir as subcategorias; use **Expandir todas** ou **Recolher todas** para visualizar rapidamente o catálogo. As escolhas de expansão são mantidas durante a navegação da sessão, mas não são gravadas no cofre.

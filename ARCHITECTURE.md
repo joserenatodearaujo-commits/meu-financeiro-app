@@ -60,3 +60,9 @@ GitHub Pages é público, **somente código**. Não sincroniza saldos entre nave
 - `js/ui/taxonomy.js` reúne gerenciamento, subcategorias dependentes da categoria e criação inline em lançamentos. O assistente de texto/voz e o editor tradicional usam a mesma fonte.
 - Registros relacionados a metas e movimentações bloqueiam exclusões/renomeações para não gerar dados órfãos; demais rótulos podem ser administrados.
 - `tests/taxonomy.test.cjs` valida migração, proteção histórica, inclusão, renomeação, exclusão e duplicidade; teste de interface cobre smartphone e desktop.
+
+## V2.10 — Seções expansíveis sem impacto financeiro
+- `<details>/<summary>` nativos em Contas e Cartões e no catálogo central, com atalhos para expandir/recolher todos os grupos.
+- `expandedAccountGroups` e `expandedTaxonomyGroups` mantêm apenas o estado de expansão enquanto a página está aberta; nenhuma estrutura do cofre é modificada.
+- Grupos de banco, espécie e crédito exibem valores derivados das regras financeiras preexistentes. Faturas, transferências e extratos continuam usando as mesmas consultas e ações.
+- A regressão de interface cobre inicialização, expandir/recolher, criação, troca de página, pagamentos e telas de 320 a 1280 px. Os testes financeiros e de criptografia continuam obrigatórios.

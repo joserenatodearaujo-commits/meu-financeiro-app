@@ -32,6 +32,7 @@ const field=(name,label,value='',type='text',rest='')=>`<div class="field"><labe
    }
    if(editing)state.accounts=state.accounts.map(a=>a.id===existingId?{...a,...x,id:existingId}:a);
    else state.accounts.push({...x,id:uid()});
+   expandedAccountGroups.add(x.type);
   });
  const typeselect=$('#accountType'),setFields=()=>{
   const card=typeselect.value==='card';

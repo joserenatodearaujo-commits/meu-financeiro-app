@@ -1,4 +1,6 @@
 'use strict';
+// Apenas estado de visualização; alterações no catálogo continuam no cofre criptografado.
+const expandedTaxonomyGroups=new Set();
 // Interface do catálogo: um único vínculo macro → micro para todos os tipos de lançamento.
 function subcategoryField(macro,micro='Diversos'){
  return '<div class="field taxonomy-subcontrol"><label>Subcategoria</label>'+
@@ -41,11 +43,15 @@ function renderTaxonomy(){
     (TaxonomyRules.key(name)!=='diversos'?'<button type="button" class="btn small" data-tax-action="rename-sub" data-tax-category="'+esc(cat)+'" data-tax-sub="'+esc(id)+'">Renomear</button><button type="button" class="btn small danger" data-tax-action="delete-sub" data-tax-category="'+esc(cat)+'" data-tax-sub="'+esc(id)+'" '+(referenced?'disabled title="Vinculada a lançamentos"':'')+'>Excluir</button>':'')+'</span></div>';
   }).join('');
   const linked=state.transactions.some(t=>TaxonomyRules.key(t.macro)===TaxonomyRules.key(entry.name))||state.goals.some(g=>TaxonomyRules.key(g.macro)===TaxonomyRules.key(entry.name));
-  return '<div class="taxonomy-group"><div class="sectionrow"><b>'+esc(entry.name)+'</b><div class="taxonomy-buttons">'+
+  return '<details class="taxonomy-group" data-tax-group="'+esc(cat)+'" '+(expandedTaxonomyGroups.has(cat)?'open':'')+'><summary><span class="disclosure-heading">'+esc(entry.name)+'</span><span class="disclosure-meta">'+subitems.length+' subcategorias</span></summary><div class="sectionrow taxonomy-group-actions"><div class="taxonomy-buttons">'+
    '<button type="button" class="btn small" data-tax-action="add-sub" data-tax-category="'+esc(cat)+'">+ Subcategoria</button>'+
    (TaxonomyRules.key(entry.name)!=='outros'?'<button type="button" class="btn small" data-tax-action="rename-cat" data-tax-category="'+esc(cat)+'">Renomear</button><button type="button" class="btn small danger" data-tax-action="delete-cat" data-tax-category="'+esc(cat)+'" '+(linked?'disabled title="Vinculada a lançamentos ou metas"':'')+'>Excluir</button>':'')+
-   '</div></div><div class="taxonomy-subs">'+subs+'</div></div>';
+   '</div></div><div class="taxonomy-subs">'+subs+'</div></details>';
  }).join('');
+ $('#taxonomyList details.taxonomy-group').forEach(details=>{
+  details.ontoggle=()=>{if(!details.isConnected)return;const key=details.dataset.taxGroup;
+   if(details.open)expandedTaxonomyGroups.add(key);else expandedTaxonomyGroups.delete(key)};
+ });
 }
 function taxonomyForm(action,category='',sub=''){
  const caption={create:'Nova categoria','add-sub':'Nova subcategoria', 'rename-cat':'Renomear categoria','rename-sub':'Renomear subcategoria'}[action];
@@ -61,6 +67,8 @@ function taxonomyForm(action,category='',sub=''){
   if(action==='rename-cat')next=TaxonomyRules.renameCategory(next,category,name,state);
   if(action==='rename-sub')next=TaxonomyRules.renameSub(next,category,sub,name,state);
   state.taxonomy=next;
+  expandedTaxonomyGroups.add(encodeURIComponent(action==='create'?TaxonomyRules.validate(name):action==='rename-cat'?TaxonomyRules.validate(name):category));
+  if(action==='rename-cat')expandedTaxonomyGroups.delete(encodeURIComponent(category));
  });
 }
 async function taxonomyAction(button){

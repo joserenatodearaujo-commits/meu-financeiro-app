@@ -72,14 +72,26 @@ def test_one(browser,modular,width):
     # V2.9: catálogo central, novas categorias, subcategoria vinculada e classificação por voz/texto.
     p.locator('[data-page="config"]').click()
     assert p.locator('#taxonomyList .taxonomy-group').count()==9
+    assert p.locator('#taxonomyList details.taxonomy-group[open]').count()==0, 'Categorias devem começar recolhidas'
+    p.locator('#taxonomyExpandAll').click()
+    assert p.locator('#taxonomyList details.taxonomy-group[open]').count()==9
+    p.locator('#taxonomyCollapseAll').click()
+    assert p.locator('#taxonomyList details.taxonomy-group[open]').count()==0
     p.locator('#newTaxCategory').click()
     p.locator('#modalForm input[name="taxName"]').fill('Pets')
     p.locator('#modalForm button[type="submit"]').click()
     p.locator('#taxonomyList').get_by_text('Pets',exact=True).wait_for()
+    assert p.locator('details.taxonomy-group[data-tax-group="Pets"]').evaluate('(el)=>el.open'), 'Categoria recém-criada deve abrir'
     p.locator('[data-tax-action="add-sub"][data-tax-category="Pets"]').click()
     p.locator('#modalForm input[name="taxName"]').fill('Ração')
     p.locator('#modalForm button[type="submit"]').click()
     assert p.evaluate("subcategoryList('Pets').includes('Ração')")
+    p.locator('details.taxonomy-group[data-tax-group="Pets"] > summary').click()
+    assert not p.locator('details.taxonomy-group[data-tax-group="Pets"]').evaluate('(el)=>el.open')
+    p.locator('details.taxonomy-group[data-tax-group="Pets"] > summary').click()
+    p.locator('[data-page="resumo"]').click()
+    p.locator('[data-page="config"]').click()
+    assert p.locator('details.taxonomy-group[data-tax-group="Pets"]').evaluate('(el)=>el.open'), 'Estado expandido deve sobreviver à navegação'
     # Formulário tradicional: as opções dependem da categoria.
     p.locator('#newEntry').click()
     p.locator('#agentTraditional').click()
@@ -119,6 +131,13 @@ def test_one(browser,modular,width):
     assert '4.950,00' in p.locator('#budgetSummary').inner_text(),p.locator('#budgetSummary').inner_text()
     # Card registration
     p.locator('[data-page="cartoes"]').click()
+    assert p.locator('#accountsTable details.account-group').count()==3
+    p.locator('#accountCollapseAll').click()
+    assert p.locator('#accountsTable details.account-group[open]').count()==0
+    p.locator('#accountExpandAll').click()
+    assert p.locator('#accountsTable details.account-group[open]').count()==3
+    p.locator('#accountCollapseAll').click()
+    assert p.locator('#accountsTable details.account-group[open]').count()==0
     p.locator('#newAccount').click()
     p.locator('#modalForm input[name="name"]').fill('Nubank')
     p.locator('#modalForm select[name="type"]').select_option('card')
@@ -126,6 +145,9 @@ def test_one(browser,modular,width):
     p.locator('#modalForm input[name="due"]').fill('15')
     p.locator('#modalForm button[type="submit"]').click()
     p.wait_for_timeout(25)
+    assert p.locator('details.account-group[data-account-group="card"]').evaluate('(el)=>el.open'), 'Novo cartão deve expandir seu grupo'
+    p.locator('details.account-group[data-account-group="card"] > summary').click()
+    assert not p.locator('details.account-group[data-account-group="card"]').evaluate('(el)=>el.open')
     # Basic voice-like interpreted text. No actual speech in test.
     p.locator('#newEntry').click()
     p.locator('#agentText').fill('Gastei quinze reais e cinquenta centavos de combustível no Pix hoje')
@@ -181,12 +203,15 @@ def test_one(browser,modular,width):
     assert p.evaluate('state.transfers.length')==1
     assert p.evaluate("FinanceRules.accountBalance(state,state.accounts.find(a=>a.type==='cash').id,bankingDate())")==150
     assert p.locator('[data-invoice-pay]').count()>=1
+    p.locator('details[data-account-section="invoices"] > summary').click()
+    assert p.locator('details[data-account-section="invoices"]').evaluate('(el)=>el.open')
     p.locator('[data-invoice-pay]:visible').first.click()
     p.locator('#modalForm input[name="amount"]').fill('75')
     p.locator('#modalForm button[type="submit"]').click()
     p.wait_for_timeout(80)
     assert p.evaluate('state.invoicePayments.length')==1
     assert p.evaluate("FinanceRules.invoices(state).some(i=>i.paid===75&&i.outstanding===125)")
+    p.locator('details[data-account-section="statement"] > summary').click()
     assert 'Pagamento da fatura' in p.locator('#accountsStatement').inner_text()
     assert not errors,errors
     p.locator('[data-page="projecoes"]').click()

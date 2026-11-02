@@ -1,5 +1,7 @@
 'use strict';
 // Meu Financeiro • Read-only views and tables.
+// Estado somente visual: nenhuma preferência é gravada no cofre financeiro.
+const expandedAccountGroups=new Set(['bank']);
 function summary(){
  const months=viewedMonths(),s=periodSums(months),rangeTitle=periodMonths===1?'1 mês':periodMonths+' meses';
  const consumption=periodBreakdown(months,'competence','macro').reduce((n,x)=>n+x[1],0);const items=[['Receitas',s.ins,'#24a569','Entradas previstas e registradas'],['Despesas por compra',consumption,'#e34d51','Por categoria e data da compra'],['Saídas do caixa',s.expenses,'#eaba2d','Pagamentos de faturas e despesas sem cartão'],['Investimentos',s.invest,'#3289db','Aportes líquidos'],['Fluxo líquido estimado',s.left,'#66788a','Receitas − saídas − aportes']];
@@ -23,15 +25,34 @@ function renderAll(){if(!state)return;$('#month').value=selectedMonth;$('#period
  const invoices=FinanceRules.invoices(state);
  const debt=invoices.reduce((n,i)=>n+i.outstanding,0);
  $('#accountInfo').innerHTML='<p class="muted">Saldos estimados a partir do saldo inicial e movimentos cadastrados. Contas antigas sem saldo de referência precisam de conciliação. Dívida total de cartões: <b>'+fmt(debt)+'</b>. Faturas antigas sem pagamento registrado aparecem como não conciliadas, não como efetivamente não pagas.</p>';
- $('#accountsTable').innerHTML=table(['Conta / Cartão','Tipo','Saldo / dívida','Referência','Ações'],state.accounts.map(ac=>{
-  const card=ac.type==='card',cash=ac.type==='cash';
-  const related=invoices.filter(i=>i.cardId===ac.id);
-  const bal=card?related.reduce((n,i)=>n+i.outstanding,0):FinanceRules.accountBalance(state,ac.id,today);
-  return [esc(ac.name),card?'Cartão de crédito':cash?'Dinheiro em espécie':'Banco / Pix',
+ const groupInfo=[
+  {id:'bank',title:'Contas bancárias / Pix'},
+  {id:'cash',title:'Carteiras / Dinheiro em espécie'},
+  {id:'card',title:'Cartões de crédito'}
+ ];
+ $('#accountsTable').innerHTML=groupInfo.map(group=>{
+  const members=state.accounts.filter(a=>a.type===group.id);
+  const balances=members.map(ac=>group.id==='card'
+   ?invoices.filter(i=>i.cardId===ac.id).reduce((n,i)=>n+i.outstanding,0)
+   :FinanceRules.accountBalance(state,ac.id,today));
+  const total=balances.reduce((a,b)=>a+(b||0),0);
+  const tableBody=members.length?table(['Conta / Cartão','Tipo','Saldo / dívida','Referência','Ações'],members.map(ac=>{
+   const card=ac.type==='card',cash=ac.type==='cash';
+   const bal=card?invoices.filter(i=>i.cardId===ac.id).reduce((n,i)=>n+i.outstanding,0):FinanceRules.accountBalance(state,ac.id,today);
+   return [esc(ac.name),card?'Cartão de crédito':cash?'Dinheiro em espécie':'Banco / Pix',
     (card?'Em aberto: ':'Saldo estimado: ')+fmt(bal||0),
     card?'Faturas':ac.openingDate?esc(ac.openingDate):'Saldo inicial não conferido',
     '<button class="btn small" data-account-edit="'+esc(ac.id)+'">Editar</button> <button class="btn small danger" data-account-delete="'+esc(ac.id)+'">Excluir</button>'];
- }));
+  })):'<p class="empty">Nenhum cadastro neste grupo.</p>';
+  return '<details class="account-group" data-account-group="'+group.id+'" '+(expandedAccountGroups.has(group.id)?'open':'')+'>'+
+   '<summary><span class="disclosure-heading">'+esc(group.title)+'</span><span class="disclosure-meta">'+members.length+' '+(members.length===1?'cadastro':'cadastros')+
+   ' · '+(group.id==='card'?'Dívida: ':'Saldo estimado: ')+fmt(total)+'</span></summary>'+
+   '<div class="disclosure-content tablewrap">'+tableBody+'</div></details>';
+ }).join('');
+ $$('#accountsTable details.account-group').forEach(details=>{
+  details.ontoggle=()=>{if(!details.isConnected)return;const key=details.dataset.accountGroup;
+   if(details.open)expandedAccountGroups.add(key);else expandedAccountGroups.delete(key)};
+ });
  $('#invoiceTable').innerHTML=table(['Cartão','Fatura','Vencimento','Total','Pago','Em aberto','Situação','Ações'],invoices.map(i=>{
   const cardName=state.accounts.find(a=>a.id===i.cardId)?.name||'Cartão não encontrado',key=esc(i.cardId+'|'+i.month);
   const buttons='<button class="btn small" data-invoice-view="'+key+'">Detalhes</button> '+(i.outstanding>0?'<button class="btn small primary" data-invoice-pay="'+key+'">Pagar fatura</button>':'');
