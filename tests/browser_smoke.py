@@ -151,7 +151,7 @@ def test_one(browser,modular,width):
     assert p.evaluate('state.transfers.length')==1
     assert p.evaluate("FinanceRules.accountBalance(state,state.accounts.find(a=>a.type==='cash').id,bankingDate())")==150
     assert p.locator('[data-invoice-pay]').count()>=1
-    p.locator('[data-invoice-pay]').first.click()
+    p.locator('[data-invoice-pay]:visible').first.click()
     p.locator('#modalForm input[name="amount"]').fill('75')
     p.locator('#modalForm button[type="submit"]').click()
     p.wait_for_timeout(80)
