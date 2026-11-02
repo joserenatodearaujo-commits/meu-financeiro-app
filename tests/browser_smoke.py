@@ -130,7 +130,9 @@ def test_one(browser,modular,width):
       goal:goalTargetPeriod(state.goals[0],['2026-11','2026-12','2027-01']),
       vaultFormat:(()=>{return document.title})()
     })''')
-    assert result['competence']==1200,result
+    expected_nov=p.evaluate("state.transactions.filter(t=>t.type==='expense'&&t.purchaseDate.startsWith('2026-11')).reduce((a,t)=>a+Number(t.amount),0)")
+    assert result['competence']==expected_nov,result
+    assert result['dec']==0, 'Uma compra parcelada não sai da conta antes de pagar a fatura'
     assert sum(result['split'])==1200,result
     assert result['goal']==4950,result
     # V2.8: carteira física, transferência interna, pagamento parcial de fatura.
