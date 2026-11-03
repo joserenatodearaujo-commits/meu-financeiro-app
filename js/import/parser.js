@@ -180,8 +180,9 @@ const ImportRules=Object.freeze({
    // and do not conflate invoice totals with individual purchases.
    const description=money[1].trim();
    if(skip.test(description))continue;
-   rows.push({date,description,amountCents,reference:'Página '+item.page});
+   rows.push({date,description,amountCents,invoiceMonth:card?referenceMonth:'',reference:'Página '+item.page});
   }
+  if(card&&!referenceMonth)issues.push('Selecione o mês da fatura para agrupar compras pelo vencimento, sem misturar com o mês da compra.');
   if(pending.length)issues.push('Datas sem ano precisam de mês de referência confirmado; movimentos de outros períodos continuam pendentes.');
   if(!rows.length)issues.push('PDF lido, mas nenhuma movimentação segura foi identificada. Confira a fonte, o mês e o layout.');
   if(card&&rows.some(r=>r.amountCents<0))issues.push('Valores negativos em faturas podem representar estornos ou créditos: confira antes de classificar.');
@@ -193,7 +194,7 @@ const ImportRules=Object.freeze({
    const source=ImportRules.source(f.source);
    if(!source)continue;
    for(const r of f.rows){
-    const month=r.date.slice(0,7),key=month+'|'+source.kind;
+    const month=source.kind==='card'&&r.invoiceMonth?r.invoiceMonth:r.date.slice(0,7),key=month+'|'+source.kind;
     if(!map.has(key))map.set(key,{month,kind:source.kind,count:0,credit:0,debit:0});
     const row=map.get(key);row.count++;
     if(r.amountCents>0)row.credit+=r.amountCents;else row.debit+=Math.abs(r.amountCents);
