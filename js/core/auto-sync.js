@@ -268,7 +268,7 @@ function autoBase64Url(data){
 }
 function autoOAuthRedirect(){
  // Keep the existing GitHub Pages origin/path so IndexedDB remains unchanged.
- return location.origin+location.pathname;
+ return location.origin+location.pathname.replace(/\/index[.]html$/,'/');
 }
 async function autoGoogleStart(){
  if(!globalThis.crypto?.subtle||!globalThis.isSecureContext)throw Error('O acesso Google requer HTTPS.');
@@ -310,7 +310,9 @@ async function autoGoogleComplete(){
     throw Error('Esta conta Google é diferente da conta já vinculada neste aparelho. O cofre local foi preservado; entre com a conta original.');
   if(auto.session?.user?.id&&auto.session.user.id!==response.user.id)
     throw Error('Outra conta já estava ativa. Nenhum cofre foi substituído.');
-  autoSessionSave({...response,expires_at:Math.floor(Date.now()/1000)+(response.expires_in||3600)});
+  autoSessionSave({access_token:response.access_token,refresh_token:response.refresh_token,
+    user:response.user,expires_in:response.expires_in,
+    expires_at:Math.floor(Date.now()/1000)+(response.expires_in||3600)});
   autoVisible('pending','Conta Google autenticada. Desbloqueie o cofre para sincronizar.');
   if(auto.unlocked)await autoRefresh();
  }catch(e){
