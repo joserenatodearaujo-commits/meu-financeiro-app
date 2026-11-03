@@ -342,7 +342,10 @@ def test_import_http(browser):
         # V2.12: revisão mensal e conferência independente de saldo bancário.
         assert p.locator('#importReview').get_by_text('Conciliação e fechamento por mês').count()==1
         assert p.locator('#reconcileMonth').input_value()=='2026-01'
-        assert p.locator('#importReview').get_by_text('Saque / espécie',exact=False).count()>=1
+        assert p.locator('#importResults .preview-table tbody tr').count()>=4
+        assert p.locator('#importResults .preview-dot-red').count()>=1
+        assert p.locator('#importReview').get_by_text('Correspondências e pendências',exact=True).count()==0
+        assert p.locator('#importResults [data-preview-filter]').count()==3
         assert p.evaluate('state.importCheckpoints.length')==0
         p.locator('#reconcileAccount').select_option('bank-test')
         assert p.locator('#reconcileOpening').input_value()=='100,00'
