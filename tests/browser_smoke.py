@@ -337,7 +337,7 @@ def test_import_http(browser):
         assert p.evaluate('importSession.files.find(x=>x.type==="pdf").rows.length')==1, p.locator('#importResults').inner_text()
         assert p.evaluate('state.transactions.length')==0, 'A leitura não pode gravar lançamentos'
         assert p.evaluate('state.transfers.length')==0, 'A leitura não pode criar transferências'
-        assert p.locator('#importResults').get_by_text('2026-10',exact=True).count()>=1
+        assert p.locator('#importResults').get_by_text('2026-10-12',exact=True).count()>=1
         assert p.locator('#importResults [data-import-source]').count()==3
         # V2.12: revisão mensal e conferência independente de saldo bancário.
         assert p.locator('#importReview').get_by_text('Conciliação e fechamento por mês').count()==1
