@@ -84,5 +84,8 @@ document.addEventListener('click',e=>{
  const month=e.target.closest('[data-projection-month]');
  if(month){projectionSelectedMonth=projectionSelectedMonth===month.dataset.projectionMonth?'':month.dataset.projectionMonth;summary();return}
  if(e.target.closest('[data-projection-close]')){projectionSelectedMonth='';summary();return}
+ const category=e.target.closest('[data-future-category]');
+ if(category){projectionCategory=projectionCategory===category.dataset.futureCategory?'':category.dataset.futureCategory;summary();return}
+ if(e.target.closest('[data-future-category-close]')){projectionCategory='';summary();return}
  if(e.target.closest('.projection-compact [data-go="projecoes"]')){page('projecoes')}
 });
