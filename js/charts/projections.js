@@ -89,3 +89,90 @@ document.addEventListener('click',e=>{
  if(e.target.closest('[data-future-category-close]')){projectionCategory='';summary();return}
  if(e.target.closest('.projection-compact [data-go="projecoes"]')){page('projecoes')}
 });
+
+
+// v2.26 — Two focused views for the Projeções page. No persisted state changes.
+let cardForecastSelection='all',cardForecastCategory='';
+function cardForecastModel(months){
+ const invoices=FinanceRules.invoices(state),cardAccounts=(state.accounts||[]).filter(a=>a.type==='card');
+ const period=new Set(months),byId=new Map();
+ for(const a of cardAccounts)byId.set(a.id,{id:a.id,name:a.name||'Cartão',total:0,months:new Map(),cats:new Map(),nextDue:null,rows:[]});
+ // Existing invoice engine already applies card installments and paid amounts,
+ // including partially paid invoices. Never add card purchases a second time.
+ for(const inv of invoices){
+  if(!period.has(inv.month)||inv.outstanding<=0)continue;
+  if(!byId.has(inv.cardId))byId.set(inv.cardId,{id:inv.cardId,name:'Cartão não identificado',total:0,months:new Map(),cats:new Map(),nextDue:null,rows:[]});
+  const card=byId.get(inv.cardId),amount=Math.round(inv.outstanding*100);
+  card.total+=amount;card.months.set(inv.month,(card.months.get(inv.month)||0)+amount);
+  if(!card.nextDue||inv.due<card.nextDue)card.nextDue=inv.due;
+  const positiveRows=inv.rows.filter(r=>r.amount>0);
+  const base=positiveRows.reduce((s,r)=>s+Math.round(r.amount*100),0);
+  let remaining=amount;
+  positiveRows.forEach((r,i)=>{
+   const share=i===positiveRows.length-1?remaining:Math.floor(amount*Math.round(r.amount*100)/Math.max(1,base));
+   remaining-=share;
+   if(share<=0)return;
+   const cat=r.macro||'Outros';
+   card.cats.set(cat,(card.cats.get(cat)||0)+share);
+   card.rows.push({cat,micro:r.micro||'Diversos',name:r.description||cat,amount:share,month:inv.month,due:r.due});
+  });
+ }
+ const cards=[...byId.values()].filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
+ const total=cards.reduce((s,c)=>s+c.total,0);
+ const byMonth=months.map(month=>({month,total:cards.reduce((s,c)=>s+(c.months.get(month)||0),0)}));
+ return {cards,total,byMonth,months};
+}
+function cardForecastPage(months){
+ const model=cardForecastModel(months),{cards,total,byMonth}=model;
+ if(cardForecastSelection!=='all'&&!cards.some(c=>c.id===cardForecastSelection))cardForecastSelection='all';
+ const card=cards.find(c=>c.id===cardForecastSelection);
+ const picked=card?[card]:cards;
+ const filteredTotal=picked.reduce((s,c)=>s+c.total,0);
+ const categories=new Map();
+ for(const c of picked)for(const [name,value] of c.cats)categories.set(name,(categories.get(name)||0)+value);
+ const catList=[...categories].sort((a,b)=>b[1]-a[1]);
+ const cent=v=>fmt(v/100);
+ const monthLabel=m=>m.slice(5)+'/'+m.slice(2,4);
+ const dateLabel=d=>d?d.split('-').reverse().join('/'):'—';
+ const percent=(v,base)=>base?((100*v/base).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%'):'0%';
+ const options=[3,6].map(n=>'<button type="button" data-forecast-horizon="'+n+'" class="'+(months.length===n?'active':'')+'" aria-pressed="'+(months.length===n)+'">'+n+' meses</button>').join('');
+ const monthPeak=byMonth.reduce((a,b)=>b.total>a.total?b:a,byMonth[0]);
+ const cardRows=cards.map(c=>{
+  const avg=c.total/months.length;
+  const active=cardForecastSelection===c.id;
+  return '<button type="button" class="forecast-card-line'+(active?' active':'')+'" data-forecast-card="'+esc(c.id)+'" aria-pressed="'+active+'">'+
+   '<span class="forecast-card-name">'+esc(c.name)+'</span><strong>'+cent(c.total)+'</strong><span>'+cent(avg)+'</span><span>'+dateLabel(c.nextDue)+'</span><span aria-hidden="true">›</span></button>';
+ }).join('');
+ const cardsBox='<section class="forecast-box"><div class="forecast-box-heading"><h3>Faturas por cartão</h3><span class="muted">Valores pendentes no período</span></div>'+
+  '<div class="forecast-metrics"><div><small>Todos os cartões</small><strong>'+cent(total)+'</strong></div><div><small>Maior cartão</small><strong>'+esc(cards[0]?.name||'—')+'</strong><span>'+cent(cards[0]?.total||0)+'</span></div><div><small>Maior mês</small><strong>'+monthLabel(monthPeak.month)+'</strong><span>'+cent(monthPeak.total)+'</span></div></div>'+
+  '<div class="forecast-card-table"><div class="forecast-card-head"><span>Cartão</span><span>Total ('+months.length+' meses)</span><span>Média/mês</span><span>Próx. fatura</span><span></span></div>'+
+  (cardRows||'<p class="muted forecast-empty">Nenhuma fatura pendente registrada para este período.</p>')+'</div>'+
+  '<div class="forecast-total-line"><span>Total de todos os cartões</span><strong>'+cent(total)+'</strong></div>'+
+  '<div class="forecast-monthly"><h4>Faturas previstas por mês</h4>'+byMonth.map(d=>'<div><span>'+monthLabel(d.month)+'</span><strong>'+cent(d.total)+'</strong></div>').join('')+'</div></section>';
+ const colors=['#24a569','#3289db','#f38c2f','#9658db','#e34d51','#98a4ad','#22aaa1','#d5a02e'];
+ let angle=0;const segments=catList.map(([name,value],i)=>{const start=angle;angle+=filteredTotal?value/filteredTotal*360:0;return {name,value,color:colors[i%colors.length],start,end:angle}});
+ const gradient=segments.length?'conic-gradient('+segments.map(s=>s.color+' '+s.start.toFixed(3)+'deg '+s.end.toFixed(3)+'deg').join(',')+')':'conic-gradient(#e7edf2 0deg 360deg)';
+ const filters=[{id:'all',name:'Todos os cartões'},...cards.map(c=>({id:c.id,name:c.name}))].map(c=>'<button type="button" data-forecast-card="'+esc(c.id)+'" class="'+(cardForecastSelection===c.id?'active':'')+'" aria-pressed="'+(cardForecastSelection===c.id)+'">'+esc(c.name)+'</button>').join('');
+ const categoryRows=segments.map(s=>'<button type="button" class="forecast-category-row'+(cardForecastCategory===s.name?' active':'')+'" data-forecast-category="'+esc(s.name)+'">'+
+ '<i style="background:'+s.color+'"></i><span>'+esc(s.name)+'</span><strong>'+cent(s.value)+'</strong><em>'+percent(s.value,filteredTotal)+'</em></button>').join('');
+ const matching=cardForecastCategory?picked.flatMap(c=>c.rows.filter(r=>r.cat===cardForecastCategory).map(r=>({...r,cardName:c.name}))):[];
+ const categoryDetails=cardForecastCategory?'<div class="forecast-category-details"><div class="sectionrow"><strong>'+esc(cardForecastCategory)+' — parcelas previstas</strong><button type="button" class="btn small" data-forecast-category-clear>Fechar</button></div>'+
+ matching.map(r=>'<div class="projection-detail-row"><span>'+esc(r.cardName)+' · '+esc(r.micro)+' · '+esc(r.name)+' · '+dateLabel(r.due)+'</span><strong>'+cent(r.amount)+'</strong></div>').join('')+'</div>':'';
+ const catsBox='<section class="forecast-box"><div class="forecast-box-heading"><h3>Despesas por categoria</h3><span class="muted">Somente faturas pendentes dos cartões</span></div>'+
+ '<div class="forecast-card-filters"><strong>Filtrar por cartão</strong><div>'+filters+'</div></div>'+
+ '<div class="forecast-donut-layout"><div class="forecast-donut" role="img" aria-label="Distribuição das despesas por categoria: '+esc(cardForecastSelection==='all'?'todos os cartões':card?.name)+'" style="background:'+gradient+'"><div><strong>'+cent(filteredTotal)+'</strong><span>Total previsto<br>('+months.length+' meses)</span></div></div>'+
+ '<div class="forecast-category-list"><div class="forecast-category-header"><span>Categoria</span><span>Valor</span><span>%</span></div>'+
+ (categoryRows||'<p class="muted forecast-empty">Nenhuma despesa prevista neste filtro.</p>')+'</div></div>'+categoryDetails+'</section>';
+ return '<div class="forecast-page"><div class="forecast-header"><span>Faturas pendentes por vencimento · '+monthLabel(months[0])+' a '+monthLabel(months[months.length-1])+'</span><div class="projection-toggle">'+options+'</div></div>'+
+ '<div class="forecast-two-views">'+cardsBox+catsBox+'</div>'+
+ '<p class="muted forecast-disclaimer">A soma considera as parcelas das faturas cadastradas, descontando pagamentos já registrados. Compras de cartão não são contadas novamente. Não inclui compras futuras ainda não realizadas nem despesas fora dos cartões.</p></div>';
+}
+document.addEventListener('click',e=>{
+ const horizon=e.target.closest('[data-forecast-horizon]');
+ if(horizon){const select=document.querySelector('#projHorizon');select.value=horizon.dataset.forecastHorizon;cardForecastCategory='';renderProjection();return}
+ const card=e.target.closest('[data-forecast-card]');
+ if(card){cardForecastSelection=card.dataset.forecastCard;cardForecastCategory='';renderProjection();return}
+ const category=e.target.closest('[data-forecast-category]');
+ if(category){cardForecastCategory=cardForecastCategory===category.dataset.forecastCategory?'':category.dataset.forecastCategory;renderProjection();return}
+ if(e.target.closest('[data-forecast-category-clear]')){cardForecastCategory='';renderProjection()}
+});
