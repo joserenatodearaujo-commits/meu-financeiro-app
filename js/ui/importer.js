@@ -19,7 +19,7 @@ function importPdfTextLines(items,pageNumber){
   // Split only when a second date starts well to the right of the first.
   let section=[],startX=parts[0]?.x||0;
   for(const part of parts){
-   const isDate=/^(?:\\d{1,2}[/-]\\d{1,2}|\\d{1,2}\\s+(?:JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ))\\b/i.test(part.text);
+   const isDate=/^(?:\d{1,2}[/-]\d{1,2}|\d{1,2}\s+(?:JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ))\b/i.test(part.text);
    if(section.length&&isDate&&part.x-startX>145){
     out.push({page:pageNumber,text:section.map(p=>p.text).join(' ')});
     section=[];startX=part.x;
