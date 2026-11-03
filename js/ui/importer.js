@@ -32,7 +32,7 @@ async function importReadPdf(file){
    lines.push(...pageLines);page.cleanup();
   }
   if(chars<20)throw Error('PDF sem texto selecionável. Exige OCR local; nenhum lançamento será criado.');
-  return {...ImportRules.fromPdfLines(lines),scanned:false,pages:pdf.numPages,lines:lines.length};
+  return {...ImportRules.fromPdfLines(lines),pdfLines:lines,scanned:false,pages:pdf.numPages,lines:lines.length};
  }finally{try{await pdf?.destroy()}catch(_){try{await task.destroy()}catch(__){}}}
 }
 async function importReadText(file){
@@ -41,11 +41,17 @@ async function importReadText(file){
  const text=(utf.match(/\uFFFD/g)||[]).length>3?new TextDecoder('windows-1252').decode(buffer):utf;
  return file.name.toLowerCase().endsWith('.csv')?ImportRules.fromCsv(text):ImportRules.fromText(text);
 }
+function importReparsePdf(item){
+ if(item.type!=='pdf'||!item.pdfLines)return;
+ const parsed=ImportRules.fromPdfLines(item.pdfLines,{referenceMonth:item.referenceMonth||'',kind:ImportRules.source(item.source)?.kind||''});
+ item.rows=parsed.rows;item.unreadable=parsed.unreadable;item.issues=parsed.issues;
+}
 function importFileSourceSelector(file,i){
+ const period=file.type==='pdf'?'<label class="field import-file-source"><span>Mês de referência da fatura (confirme no PDF)</span><input type="month" data-import-month="'+i+'" value="'+esc(file.referenceMonth||'')+'"><small>Necessário para lançamentos com data DD/MM sem ano. Para janeiro, dezembro pertence ao ano anterior.</small></label>':'';
  return '<label class="field import-file-source"><span>Origem</span><select data-import-source="'+i+'" aria-label="Origem do arquivo '+esc(file.name)+'">'+
   '<option value="" '+(!file.source?'selected':'')+'>Selecionar instituição e tipo</option>'+
   ImportRules.sources.map(s=>'<option value="'+esc(s.id)+'" '+(file.source===s.id?'selected':'')+'>'+esc(s.label)+'</option>').join('')+
-  '</select></label>';
+  '</select></label>'+period;
 }
 function renderImport(){
  const target=$('#importResults');if(!target)return;
@@ -94,12 +100,13 @@ async function importAnalyzeFiles(){
   for(const [i,file] of selected.entries()){
    $('#importStatus').textContent='Analisando arquivo '+(i+1)+' de '+selected.length+' no navegador…';
    const extension=String(file.name).split('.').pop().toLowerCase();
-   const item={name:file.name,size:file.size,type:extension,source:ImportRules.sourceHint(file.name),rows:[],unreadable:[],issues:[],status:'error'};
+   const item={name:file.name,size:file.size,type:extension,source:ImportRules.sourceHint(file.name),referenceMonth:'',rows:[],unreadable:[],issues:[],status:'error'};
    try{
     if(!['csv','txt','pdf'].includes(extension))throw Error('Formato inválido. Use PDF, CSV ou TXT.');
     const result=extension==='pdf'?await importReadPdf(file):await importReadText(file);
     item.rows=result.rows||[];item.unreadable=result.unreadable||[];item.issues=result.issues||[];
-    item.pages=result.pages||0;item.status='ok';
+    item.pages=result.pages||0;item.pdfLines=result.pdfLines||null;item.status='ok';
+    if(extension==='pdf')importReparsePdf(item);
    }catch(e){item.error=e?.message||'Falha ao ler arquivo';item.status='error'}
    importSession.files.push(item);
   }
@@ -111,10 +118,12 @@ function initImporter(){
  $('#importClear').onclick=()=>{importSession.files=[];$('#importFiles').value='';$('#importStatus').textContent='Prévia descartada. Nenhum dado foi gravado.';renderImport()};
  $('#importFiles').onchange=()=>{$('#importStatus').textContent=$('#importFiles').files?.length+' arquivo(s) selecionado(s). Clique em Ler e organizar.'};
  $('#importResults').addEventListener('change',e=>{
-  const i=e.target.dataset.importSource;
-  if(i===undefined)return;
-  const f=importSession.files[Number(i)];if(!f)return;
-  f.source=e.target.value;renderImport();
+  const sourceIndex=e.target.dataset.importSource,monthIndex=e.target.dataset.importMonth;
+  const index=sourceIndex!==undefined?Number(sourceIndex):monthIndex!==undefined?Number(monthIndex):-1;
+  const f=importSession.files[index];if(!f)return;
+  if(sourceIndex!==undefined)f.source=e.target.value;
+  if(monthIndex!==undefined)f.referenceMonth=e.target.value;
+  importReparsePdf(f);renderImport();
  });
  renderImport();
 }
