@@ -286,9 +286,15 @@ async function autoGoogleComplete(){
  const query=new URLSearchParams(location.search);
  // Only handle OAuth callbacks started by this exact browser session.
  const verifier=sessionStorage.getItem(AUTO_GOOGLE_VERIFIER);
- if(!verifier)return;
  const started=Number(sessionStorage.getItem(AUTO_GOOGLE_STARTED));
- const code=query.get('code'),authError=query.get('error');
+ const hashQuery=new URLSearchParams(location.hash.replace(/^#/,''));
+ const code=query.get('code'),authError=query.get('error')||hashQuery.get('error');
+ if((code||authError)&&!verifier){
+  const detail='Retorno Google recebido em outra sessão do navegador. Abra e conclua o login na mesma aba do Chrome; seus registros locais foram preservados.';
+  const error=$('#authError');if(error)error.textContent=detail;
+  autoVisible('offline',detail,true);
+  return;
+ }
  const clear=()=>{
   sessionStorage.removeItem(AUTO_GOOGLE_VERIFIER);
   sessionStorage.removeItem(AUTO_GOOGLE_STARTED);
