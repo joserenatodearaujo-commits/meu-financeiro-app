@@ -130,7 +130,7 @@ const ReconcileRules=Object.freeze({
   if(!account||!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return {ok:false,reason:'Selecione a conta bancária correspondente ao extrato.'};
   const january=month.slice(0,4)+'-01';
   if(month===january){
-   if(account.openingDate!==january||!Number.isFinite(Number(account.openingBalance)))
+   if(account.openingDate!==january+'-01'||!Number.isFinite(Number(account.openingBalance)))
     return {ok:false,reason:'Cadastre na conta o saldo oficial de 01/01/'+month.slice(0,4)+' antes de conciliar janeiro.'};
    return {ok:true,opening:Math.round(Number(account.openingBalance)*100),origin:'Saldo inicial oficial em '+january};
   }
