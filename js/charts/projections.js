@@ -52,7 +52,7 @@ function compactProjection(months){
   (selected.commitments.length?selected.commitments.map(t=>'<div class="projection-detail-row"><span>'+esc(t.description||t.macro||'Compromisso')+' · '+esc(t.macro||'Outros')+'</span><strong>'+fmt(t.amount)+'</strong></div>').join(''):'<p class="muted">Não há compromissos cadastrados para este mês.</p>')+'</div>':'';
  const categoriesLegend=categories.length?categories.map(c=>'<span><i class="dot" style="background:'+colorExpense(categoryTotals[c],maxCategory)+'"></i>'+esc(c)+'</span>').join(''):'<span>Sem compromissos cadastrados para o período.</span>';
  return '<section class="projection-compact" aria-label="Projeção dos compromissos futuros">'+
-  '<div class="projection-switch"><span class="muted">A partir de '+formatMonth(data[0].month)+' · compromissos previstos</span><div class="projection-toggle" role="group" aria-label="Horizonte da projeção">'+
+  '<div class="projection-switch"><span class="muted">A partir de '+formatMonth(data[0].month)+' · compromissos previstos · v2.24</span><div class="projection-toggle" role="group" aria-label="Horizonte da projeção">'+
   [3,6].map(n=>'<button type="button" data-projection-horizon="'+n+'" aria-pressed="'+(projectionSummaryHorizon===n)+'" class="'+(projectionSummaryHorizon===n?'active':'')+'">'+n+' meses</button>').join('')+'</div></div>'+
   '<div class="projection-plot" role="group" aria-label="Gráfico de despesas futuras por categoria">'+
   (categories.length?'<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Colunas agrupadas de compromissos previstos nos próximos '+months.length+' meses" xmlns="http://www.w3.org/2000/svg">'+svg+'</svg>':'<div class="projection-empty">Nenhuma despesa recorrente ou fatura futura registrada.</div>')+'</div>'+
