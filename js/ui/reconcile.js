@@ -13,8 +13,6 @@ function renderImportReconciliation(){
  const activeMonths=[...new Set(months.map(x=>x.month))];
  if(!activeMonths.includes(reconcileSession.month))reconcileSession.month=activeMonths[0];
  const selected=reconcileSession.month,monthly=months.filter(x=>x.month===selected),review=rows.filter(x=>(x.kind==='card'&&x.invoiceMonth?x.invoiceMonth:x.date.slice(0,7))===selected);
- const statuses=new Map();
- for(const r of review)statuses.set(r.status,(statuses.get(r.status)||0)+1);
  const summaryRows=monthly.map(m=>{
   const saved=(state?.importCheckpoints||[]).find(x=>x.month===m.month&&x.source===m.source);
   const stillValid=saved&&saved.count===m.count&&saved.positive===m.positive&&saved.negative===m.negative;
@@ -39,25 +37,13 @@ function renderImportReconciliation(){
   '<div class="actions"><button class="btn" type="button" id="reconcileCheck">Conferir diferença</button><button class="btn primary" type="button" id="reconcileSave">Salvar conferência no cofre</button></div>'+
   '<p id="reconcileMessage" class="muted" role="status">A conferência bancária é separada da classificação das despesas. Não altera o saldo do aplicativo.</p>'
   :'<p class="muted">Não há linhas bancárias reconhecidas neste mês para confrontar saldos.</p>';
- const statusCount=[...statuses.entries()].map(([k,n])=>esc(reconcileLabel[k]||k)+': '+n).join(' · ');
- const list=review.slice(0,100).map(r=>{
-  const related=r.related?.map(id=>rows.find(x=>x.id===id)).filter(Boolean).map(x=>esc(x.source)+' · '+esc(x.date)).join(', ')||'';
-  const cat=r.category?esc(r.category.macro+' / '+r.category.micro):'A definir';
-  return '<div class="reconcile-row"><div class="reconcile-row-title"><b>'+esc(r.date)+' · '+esc(r.description)+'</b>'+
-   '<span class="'+(r.amountCents<0?'amountneg':'amountpos')+'">'+reconcileMoney(r.amountCents)+'</span></div>'+
-   '<div class="muted">'+esc(ImportRules.source(r.source)?.label||r.source)+' · '+esc(r.filename)+' · '+esc(r.reference)+'</div>'+
-   '<p><strong>'+esc(reconcileLabel[r.status]||'Conferir')+'</strong> — '+esc(r.reason)+(related?' · possível par: '+related:'')+'</p>'+
-   '<div class="muted">Categoria sugerida: '+cat+' (não gravada)</div></div>';
- }).join('');
  holder.innerHTML='<section class="import-reconcile-section"><div class="sectionrow"><h2>Conciliação e fechamento por mês</h2>'+
  '<label class="field"><span>Mês</span><select id="reconcileMonth">'+activeMonths.map(m=>'<option value="'+esc(m)+'" '+(m===selected?'selected':'')+'>'+esc(m)+'</option>').join('')+'</select></label></div>'+
  '<div class="notice warning">Correspondências são <strong>possibilidades, não confirmações</strong>. Nenhum movimento é importado, transferido, classificado ou pago automaticamente. Um saldo bancário conferido não significa fechamento financeiro definitivo.</div>'+
  '<h3>Movimentações identificadas por origem</h3>'+
  table(['Fonte','Registros','Valores positivos','Valores negativos','Variação','Conferência'],summaryRows)+
  '<h3>Conferir saldo de cada conta corrente</h3>'+banks+
- '<h3>Correspondências e pendências</h3><p class="muted">'+esc(statusCount)+' · '+review.length+' registro(s) no mês. Exibindo até 100 movimentações.</p>'+
- '<div class="reconcile-list">'+(list||'<p class="empty">Nenhuma movimentação reconhecida.</p>')+'</div>'+
- '<p class="muted">Diferenças de dinheiro físico precisam de contagem da carteira; saques e Pix não são despesas ou receitas por presunção.</p>'+
+ '<p class="muted">Todas as classificações sugeridas e pendências aparecem na Prévia acima. Esta seção fica dedicada apenas aos saldos bancários. Diferenças de dinheiro físico exigem conferência da carteira.</p>'+
  '</section>';
  if(bank.length)reconcileBindBank(monthly,rows);
  $('#reconcileMonth').onchange=e=>{reconcileSession.month=e.target.value;renderImportReconciliation()};
