@@ -28,6 +28,8 @@ jobs:
         run: node tests/reconcile_rules.test.cjs
       - name: Regras de fusao de dados entre dispositivos
         run: node tests/auto_sync_rules.test.cjs
+      - name: Login Google OAuth e proteção de identidade
+        run: node tests/google_oauth.test.cjs
       - name: Criptografia e compatibilidade de cofres
         run: node tests/crypto.test.cjs
       - name: Preparar navegador de testes
