@@ -127,18 +127,48 @@ const ImportRules=Object.freeze({
   }
   return {rows:items,unreadable,issues:items.length?[]:['Layout TXT não reconhecido; será necessária adaptação ao arquivo.']};
  },
- fromPdfLines(lines){
-  const rows=[],unreadable=[];
+ fromPdfLines(lines,options={}){
+  // Card statements frequently show DD/MM without a year. Only resolve it when
+  // the user has explicitly chosen a statement reference month (YYYY-MM).
+  const referenceMonth=/^\\d{4}-(0[1-9]|1[0-2])$/.test(options.referenceMonth||'')?options.referenceMonth:'';
+  const card=options.kind==='card';
+  const rows=[],unreadable=[],issues=[],pending=[];
+  const skip=/^(?:total(?:\\s+(?:da|de|do|dos|das))?\\s+(?:fatura|compras|pagamentos|creditos|debitos|lan[cç]amentos)|saldo(?:\\s+(?:anterior|atual|final|total))?|pagamento\\s+m[ií]nimo|vencimento|limite\\s+(?:disponivel|total)|resumo|subtotal|valor\\s+total|encargos\\s+totais|parcelamento\\s+da\\s+fatura)/i;
+  const datePrefix=/^(\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}|\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)\\s+(.+)$/;
+  const valueSuffix=/^(.*?)\\s+(?:R\\$\\s*)?(\\(?[-+]?\\d[\\d.,]*[-]?[cCdD]?\\)?)\\s*$/;
   for(const item of lines){
-   const line=String(item.text||'').trim().replace(/\s+/g,' ');
-   // Os PDFs de fatura variam: só interpretar linhas com data COMPLETA e montante terminal inequívoco.
-   const m=line.match(/^(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})\s+(.+?)\s+(?:R\$\s*)?(\(?[-+]?\d[\d.,]*[-]?[cCdD]?\)?)\s*$/);
-   if(!m){if(/\d{1,2}[/-]\d{1,2}|\bR\$\b/.test(line))unreadable.push({line:item.page,text:line.slice(0,220)});continue}
-   const date=ImportRules.date(m[1]),amountCents=ImportRules.cents(m[3]);
+   const line=String(item.text||'').trim().replace(/\\s+/g,' ');
+   if(!line)continue;
+   const match=line.match(datePrefix);
+   if(!match){if(/(?:\\d{1,2}[/-]\\d{1,2}|R\\$)/.test(line))unreadable.push({line:item.page,text:line.slice(0,220)});continue}
+   const remainder=match[2].trim();
+   if(skip.test(remainder))continue;
+   const money=remainder.match(valueSuffix);
+   if(!money||!money[1]?.trim()){unreadable.push({line:item.page,text:line.slice(0,220)});continue}
+   let date=ImportRules.date(match[1]);
+   if(!date&&/^\\d{1,2}[/-]\\d{1,2}$/.test(match[1])){
+    if(!referenceMonth){unreadable.push({line:item.page,text:line.slice(0,220)});pending.push(line);continue}
+    const [day,month]=match[1].split(/[/-]/).map(Number);
+    const [year,referenceNumber]=referenceMonth.split('-').map(Number);
+    // A fatura may show purchases from the reference month or prior month.
+    // For a January statement, December belongs to the preceding year.
+    const candidateYear=month>referenceNumber?year-1:year;
+    const diff=(year*12+referenceNumber)-(candidateYear*12+month);
+    if(diff<0||diff>1){unreadable.push({line:item.page,text:line.slice(0,220)});pending.push(line);continue}
+    date=ImportRules.date(String(day).padStart(2,'0')+'/'+String(month).padStart(2,'0')+'/'+candidateYear);
+   }
+   const amountCents=ImportRules.cents(money[2]);
    if(!date||amountCents===null){unreadable.push({line:item.page,text:line.slice(0,220)});continue}
-   rows.push({date,description:m[2].trim(),amountCents,reference:'Página '+item.page});
+   // Card charges are shown as positive consumption; leave refunds negative
+   // and do not conflate invoice totals with individual purchases.
+   const description=money[1].trim();
+   if(skip.test(description))continue;
+   rows.push({date,description,amountCents,reference:'Página '+item.page});
   }
-  return {rows,unreadable,issues:rows.length?[]:['PDF lido, porém o layout das movimentações exige conferência ou adaptação.']};
+  if(pending.length)issues.push('Datas sem ano precisam de mês de referência confirmado; movimentos de outros períodos continuam pendentes.');
+  if(!rows.length)issues.push('PDF lido, mas nenhuma movimentação segura foi identificada. Confira a fonte, o mês e o layout.');
+  if(card&&rows.some(r=>r.amountCents<0))issues.push('Valores negativos em faturas podem representar estornos ou créditos: confira antes de classificar.');
+  return {rows,unreadable,issues};
  },
  monthly(files){
   const map=new Map();
