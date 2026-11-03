@@ -134,7 +134,7 @@ const ImportRules=Object.freeze({
   const card=options.kind==='card';
   const rows=[],unreadable=[],issues=[],pending=[];
   const skip=/^(?:total(?:\s+(?:da|de|do|dos|das))?\s+(?:fatura|compras|pagamentos|creditos|debitos|lan[cç]amentos)|saldo(?:\s+(?:anterior|atual|final|total))?|pagamento\s+m[ií]nimo|vencimento|limite\s+(?:disponivel|total)|resumo|subtotal|valor\s+total|encargos\s+totais|parcelamento\s+da\s+fatura)/i;
-  const datePrefix=/^(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)\s+(.+)$/;
+  const datePrefix=/^(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?|\d{1,2}\s+(?:JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ))\s+(.+)$/i;
   const valueSuffix=/^(.*?)\s+(?:R\$\s*)?(\(?[-+]?\d[\d.,]*[-]?[cCdD]?\)?)\s*$/;
   for(const item of lines){
    const line=String(item.text||'').trim().replace(/\s+/g,' ');
@@ -156,6 +156,23 @@ const ImportRules=Object.freeze({
     const diff=(year*12+referenceNumber)-(candidateYear*12+month);
     if(diff<0||diff>1){unreadable.push({line:item.page,text:line.slice(0,220)});pending.push(line);continue}
     date=ImportRules.date(String(day).padStart(2,'0')+'/'+String(month).padStart(2,'0')+'/'+candidateYear);
+   }
+   // Month abbreviations in Brazilian statements (e.g. 15 JAN).
+   if(!date&&/^\d{1,2}\s+[a-z]{3}$/i.test(match[1])){
+    const monthNames=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+    const [dayText,monthText]=match[1].split(/\s+/);
+    const month=monthNames.indexOf(monthText.toUpperCase())+1;
+    if(!referenceMonth||month===0){unreadable.push({line:item.page,text:line.slice(0,220)});pending.push(line);continue}
+    const [year,referenceNumber]=referenceMonth.split('-').map(Number);
+    const candidateYear=month>referenceNumber?year-1:year;
+    const diff=(year*12+referenceNumber)-(candidateYear*12+month);
+    if(diff<0||diff>1){unreadable.push({line:item.page,text:line.slice(0,220)});pending.push(line);continue}
+    date=ImportRules.date(dayText+'/'+String(month).padStart(2,'0')+'/'+candidateYear);
+   }
+   // A bank row with two terminal monetary columns may contain movement + running balance.
+   // Never mistake the balance for the transaction amount.
+   if(/(?:^|\s)[-+]?\d[\d.]*,\d{2}\s+(?:R\$\s*)?[-+]?\d[\d.]*,\d{2}$/.test(remainder)){
+    unreadable.push({line:item.page,text:line.slice(0,220)});continue;
    }
    const amountCents=ImportRules.cents(money[2]);
    if(!date||amountCents===null){unreadable.push({line:item.page,text:line.slice(0,220)});continue}
