@@ -118,3 +118,33 @@ body:has(#modalRoot .modalback) #newEntry,body:has(#modalRoot .modalback) .quick
 .goal-months .field{min-width:0}.goal-months input{width:100%;min-width:0}
 .goal-mini{display:inline-block;white-space:nowrap;margin:2px 5px 2px 0;color:#536174;font-size:11px}
 @media(max-width:600px){.goal-months{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.goal-month-toolbar{align-items:flex-start}}
+
+/* v2.21 — Sankey verdadeiro também no Android. A rolagem horizontal preserva
+   a espessura e as conexões das faixas, sem reduzir o gráfico a barras. */
+@media(max-width:730px){
+ .chart-scroll.is-sankey{
+  display:block;
+  width:100%;
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  touch-action:pan-x pan-y;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  border:1px solid #e3eaf0;
+  border-radius:11px;
+  background:#fcfdfd;
+  padding:8px 6px 12px;
+ }
+ .chart-scroll.is-sankey svg{display:block;width:930px;min-width:930px;max-width:none;height:auto}
+ .chart-scroll.is-sankey::after{
+  content:"Deslize para os lados para explorar os fluxos e os destinos →";
+  display:block;
+  width:max-content;
+  max-width:930px;
+  padding:8px 10px 0;
+  font-size:11px;
+  color:#637184;
+ }
+ .mobile-sankey{display:none}
+}
