@@ -125,6 +125,22 @@ const ReconcileRules=Object.freeze({
   }
   return [...monthMap.values()].map(x=>({...x,net:x.positive-x.negative,files:[...x.files]})).sort((a,b)=>a.month.localeCompare(b.month)||a.source.localeCompare(b.source));
  },
+ openingForMonth(financial,accountId,month){
+  const account=(financial?.accounts||[]).find(a=>a.id===accountId&&(a.type==='bank'||a.type==='cash'));
+  if(!account||!/^\\d{4}-(0[1-9]|1[0-2])$/.test(month))return {ok:false,reason:'Selecione a conta bancária correspondente ao extrato.'};
+  const january=month.slice(0,4)+'-01';
+  if(month===january){
+   if(account.openingDate!==january||!Number.isFinite(Number(account.openingBalance)))
+    return {ok:false,reason:'Cadastre na conta o saldo oficial de 01/01/'+month.slice(0,4)+' antes de conciliar janeiro.'};
+   return {ok:true,opening:Math.round(Number(account.openingBalance)*100),origin:'Saldo inicial oficial em '+january};
+  }
+  const [year,m]=month.split('-').map(Number);
+  const previous=m===1?(year-1)+'-12':year+'-'+String(m-1).padStart(2,'0');
+  const matching=(financial?.importCheckpoints||[]).filter(c=>c.accountId===accountId&&c.month===previous&&c.status==='bank-balance-checked'&&c.coverage===true);
+  if(matching.length!==1||!Number.isSafeInteger(matching[0].closing))
+   return {ok:false,reason:'Conclua a conferência de '+previous+' desta mesma conta antes de avançar para '+month+'.'};
+  return {ok:true,opening:matching[0].closing,origin:'Saldo final conferido em '+previous};
+ },
  checkBankMonth(summary,openingCents,closingCents,coverage,unresolved=0){
   if(!summary||summary.kind!=='bank')return {ok:false,reason:'Somente contas correntes possuem conferência de saldo bancário.'};
   if(!Number.isSafeInteger(openingCents)||!Number.isSafeInteger(closingCents))return {ok:false,reason:'Informe os saldos de abertura e encerramento.'};
