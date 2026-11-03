@@ -12,7 +12,7 @@ function renderImportReconciliation(){
  }
  const activeMonths=[...new Set(months.map(x=>x.month))];
  if(!activeMonths.includes(reconcileSession.month))reconcileSession.month=activeMonths[0];
- const selected=reconcileSession.month,monthly=months.filter(x=>x.month===selected),review=rows.filter(x=>x.date.startsWith(selected));
+ const selected=reconcileSession.month,monthly=months.filter(x=>x.month===selected),review=rows.filter(x=>(x.kind==='card'&&x.invoiceMonth?x.invoiceMonth:x.date.slice(0,7))===selected);
  const statuses=new Map();
  for(const r of review)statuses.set(r.status,(statuses.get(r.status)||0)+1);
  const summaryRows=monthly.map(m=>{
