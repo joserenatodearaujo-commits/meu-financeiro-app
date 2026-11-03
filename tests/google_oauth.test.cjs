@@ -1,0 +1,18 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const js=fs.readFileSync(path.join(__dirname,'../js/core/auto-sync.js'),'utf8');
+const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+assert.match(html,/id="autoGoogleLogin"/);
+assert.match(js,/code_challenge_method:'s256'/);
+assert.match(js,/grant_type=pkce/);
+assert.match(js,/existing\.userId!==response\.user\.id/);
+assert.match(js,/autoGoogleComplete\(\)\.catch/);
+assert.match(js,/autoOAuthRedirect\(\)[\s\S]*?location\.origin\+location\.pathname/);
+const helper=js.slice(js.indexOf('function autoBase64Url('),js.indexOf('function autoOAuthRedirect('));
+const ctx=vm.createContext({btoa:x=>Buffer.from(x,'binary').toString('base64'),String,Uint8Array});
+vm.runInContext(helper,ctx);
+const encode=vm.runInContext('autoBase64Url',ctx);
+assert.equal(encode(Uint8Array.from([251,255,254])),'-__-');
+assert.equal(encode(Uint8Array.from([0])),'AA');
+console.log('PASS Google OAuth: PKCE encoding, callback validation, no automatic vault replacement');
