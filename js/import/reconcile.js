@@ -127,7 +127,7 @@ const ReconcileRules=Object.freeze({
  },
  openingForMonth(financial,accountId,month){
   const account=(financial?.accounts||[]).find(a=>a.id===accountId&&(a.type==='bank'||a.type==='cash'));
-  if(!account||!/^\\d{4}-(0[1-9]|1[0-2])$/.test(month))return {ok:false,reason:'Selecione a conta bancária correspondente ao extrato.'};
+  if(!account||!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))return {ok:false,reason:'Selecione a conta bancária correspondente ao extrato.'};
   const january=month.slice(0,4)+'-01';
   if(month===january){
    if(account.openingDate!==january||!Number.isFinite(Number(account.openingBalance)))
