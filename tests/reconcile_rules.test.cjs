@@ -48,6 +48,17 @@ ok(!R.checkBankMonth(bi,100000,7500,false,0).ok,'partial coverage blocked');
 ok(!R.checkBankMonth(bi,100000,7500,true,1).ok,'ambiguous duplicate blocked');
 const bad={...bi,unreadable:1};
 ok(!R.checkBankMonth(bad,100000,7500,true,0).ok,'incomplete extraction blocks closing');
+const janState={accounts:[{id:'bank-inter',name:'Inter',type:'bank',openingBalance:500,openingDate:'2026-01-01'}],importCheckpoints:[]};
+let start=R.openingForMonth(janState,'bank-inter','2026-01');
+eq(start.opening,50000,'Janeiro começa no saldo oficial da conta');
+ok(start.ok,'Janeiro disponível com saldo configurado');
+ok(!R.openingForMonth(janState,'bank-inter','2026-02').ok,'Fevereiro bloqueado sem janeiro');
+janState.importCheckpoints.push({id:'check-january',accountId:'bank-inter',month:'2026-01',source:'inter-bank',status:'bank-balance-checked',coverage:true,closing:68000});
+start=R.openingForMonth(janState,'bank-inter','2026-02');
+ok(start.ok,'Fevereiro desbloqueado após conferir janeiro');
+eq(start.opening,68000,'Fevereiro herda fechamento de janeiro');
+ok(!R.openingForMonth(janState,'bank-inter','2026-03').ok,'Março não pula fevereiro');
+ok(!R.openingForMonth({accounts:[{id:'missing',type:'bank',openingBalance:500}]},'missing','2026-01').ok,'Saldo sem data não é presumido');
 const many=[
  {source:'inter-bank',name:'a.csv',status:'ok',unreadable:[],issues:[],rows:[{date:'2026-10-01',description:'TRF',amountCents:-1000}]},
  {source:'itau-bank',name:'b.txt',status:'ok',unreadable:[],issues:[],rows:[{date:'2026-10-01',description:'TRF',amountCents:1000},{date:'2026-10-01',description:'TRF',amountCents:1000}]},
