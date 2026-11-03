@@ -79,7 +79,7 @@ function importPreviewClassification(row){
  // A duplicate, suspected transfer, cash movement, invoice payment or existing item
  // must remain pending even when a spending category can be suggested.
  const identified=!!category&&row.status==='review';
- return {category,identified,reason:row.status==='review'?(category?'Classificação sugerida, ainda não aprovada.':'Categoria e subcategoria precisam de revisão.'):row.reason};
+ return {category,proposed:entry?{macro:entry.name,micro:sub||''}:null,identified,reason:row.status==='review'?(category?'Classificação sugerida, ainda não aprovada.':'Categoria e subcategoria precisam de revisão.'):row.reason};
 }
 function importPreviewSelectOptions(entries,selected,label){
  return '<option value="">'+esc(label)+'</option>'+entries.map(x=>
@@ -87,7 +87,7 @@ function importPreviewSelectOptions(entries,selected,label){
 }
 function importPreviewRows(rows){
  return rows.map(row=>{
-  const status=importPreviewClassification(row),cat=status.category;
+  const status=importPreviewClassification(row),cat=status.proposed;
   const categories=taxonomyCatalog().entries.map(x=>x.name);
   const subcategories=cat?(TaxonomyRules.find(taxonomyCatalog(),cat.macro)?.subcategories||[]):[];
   const source=ImportRules.source(row.source)?.label||row.source;
