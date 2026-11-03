@@ -12,7 +12,23 @@ function importPdfTextLines(items,pageNumber){
   line.parts.push({x,text});
  }
  lines.sort((a,b)=>b.y-a.y);
- return lines.map(l=>({page:pageNumber,text:l.parts.sort((a,b)=>a.x-b.x).map(x=>x.text).join(' ')}));
+ const out=[];
+ for(const row of lines){
+  const parts=row.parts.sort((a,b)=>a.x-b.x);
+  // Some PDFs have two independent columns of purchases sharing the same Y.
+  // Split only when a second date starts well to the right of the first.
+  let section=[],startX=parts[0]?.x||0;
+  for(const part of parts){
+   const isDate=/^(?:\\d{1,2}[/-]\\d{1,2}|\\d{1,2}\\s+(?:JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ))\\b/i.test(part.text);
+   if(section.length&&isDate&&part.x-startX>145){
+    out.push({page:pageNumber,text:section.map(p=>p.text).join(' ')});
+    section=[];startX=part.x;
+   }
+   section.push(part);
+  }
+  if(section.length)out.push({page:pageNumber,text:section.map(p=>p.text).join(' ')});
+ }
+ return out;
 }
 async function importReadPdf(file){
  if(!globalThis.pdfjsLib)throw Error('Leitor de PDF local indisponível.');
