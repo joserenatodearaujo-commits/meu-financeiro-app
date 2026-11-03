@@ -1,6 +1,6 @@
 'use strict';
 // Área de conferência temporária. Nenhuma informação financeira é persistida ou enviada à rede.
-const importSession={files:[],reading:false};
+const importSession={files:[],reading:false,categoryOverrides:new Map(),previewFilter:'all',previewSearch:''};
 const importFormatMoney=cents=>Number(cents/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 function importPdfTextLines(items,pageNumber){
  const lines=[];
@@ -69,6 +69,63 @@ function importFileSourceSelector(file,i){
   ImportRules.sources.map(s=>'<option value="'+esc(s.id)+'" '+(file.source===s.id?'selected':'')+'>'+esc(s.label)+'</option>').join('')+
   '</select></label>'+period;
 }
+// Classification suggestions are local preview data. Never write them to the financial vault.
+function importPreviewClassification(row){
+ const id=row.id,override=importSession.categoryOverrides.get(id),catalog=taxonomyCatalog();
+ const proposed=override||row.category;
+ const entry=proposed?TaxonomyRules.find(catalog,proposed.macro):null;
+ const sub=entry?.subcategories?.find(x=>TaxonomyRules.key(x)===TaxonomyRules.key(proposed.micro));
+ const category=entry&&sub?{macro:entry.name,micro:sub}:null;
+ // A duplicate, suspected transfer, cash movement, invoice payment or existing item
+ // must remain pending even when a spending category can be suggested.
+ const identified=!!category&&row.status==='review';
+ return {category,identified,reason:row.status==='review'?(category?'Classificação sugerida, ainda não aprovada.':'Categoria e subcategoria precisam de revisão.'):row.reason};
+}
+function importPreviewSelectOptions(entries,selected,label){
+ return '<option value="">'+esc(label)+'</option>'+entries.map(x=>
+  '<option value="'+esc(x)+'" '+(x===selected?'selected':'')+'>'+esc(x)+'</option>').join('');
+}
+function importPreviewRows(rows){
+ return rows.map(row=>{
+  const status=importPreviewClassification(row),cat=status.category;
+  const categories=taxonomyCatalog().entries.map(x=>x.name);
+  const subcategories=cat?(TaxonomyRules.find(taxonomyCatalog(),cat.macro)?.subcategories||[]):[];
+  const source=ImportRules.source(row.source)?.label||row.source;
+  const reason=status.identified?'Identificação sugerida — confirme antes de importar.':status.reason;
+  return '<tr data-preview-row="'+esc(row.id)+'" data-preview-status="'+(status.identified?'identified':'pending')+'">'+
+   '<td><span class="preview-dot '+(status.identified?'preview-dot-green':'preview-dot-red')+'" role="img" aria-label="'+(status.identified?'Identificado':'Pendente de análise')+'" title="'+esc(reason)+'"></span></td>'+
+   '<td>'+esc(row.date)+(row.invoiceMonth?'<small class="preview-invoice">Fatura '+esc(row.invoiceMonth)+'</small>':'')+'</td>'+
+   '<td><strong>'+esc(row.description)+'</strong><small class="preview-origin">'+esc(source)+' · '+esc(row.reference||row.filename)+'</small>'+
+   (status.identified?'':'<small class="preview-pending-note">'+esc(reason)+'</small>')+'</td>'+
+   '<td class="'+(row.amountCents<0?'amountneg':'amountpos')+'">'+importFormatMoney(row.amountCents)+'</td>'+
+   '<td><select class="preview-category" data-preview-category="'+esc(row.id)+'" aria-label="Categoria de '+esc(row.description)+'">'+importPreviewSelectOptions(categories,cat?.macro||'','A definir')+'</select></td>'+
+   '<td><select class="preview-subcategory" data-preview-subcategory="'+esc(row.id)+'" aria-label="Subcategoria de '+esc(row.description)+'" '+(!cat?'disabled':'')+'>'+
+    importPreviewSelectOptions(subcategories,cat?.micro||'','A definir')+'</select></td></tr>';
+ }).join('');
+}
+function importPreviewTable(rows){
+ const evaluated=rows.map(row=>({row,...importPreviewClassification(row)}));
+ const identified=evaluated.filter(x=>x.identified).length,pending=rows.length-identified;
+ const shown=evaluated.filter(x=>(importSession.previewFilter==='all'||(importSession.previewFilter==='identified')===x.identified)&&
+  (!importSession.previewSearch||[x.row.date,x.row.description,x.row.source,x.category?.macro,x.category?.micro].join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().includes(importSession.previewSearch.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()))).map(x=>x.row);
+ const opts=[['all','Todos'],['identified','Identificados'],['pending','Pendentes']];
+ return '<section class="import-preview-panel" aria-label="Prévia de lançamentos identificados">'+
+  '<div class="sectionrow"><h3>Prévia de lançamentos identificados</h3></div>'+
+  '<div class="preview-stats">'+
+   '<div><small>Identificados</small><strong class="amountpos">'+identified+'</strong></div>'+
+   '<div><small>Pendentes</small><strong class="amountneg">'+pending+'</strong></div>'+
+   '<div><small>Total analisado</small><strong>'+rows.length+'</strong></div>'+
+  '</div>'+
+  '<p class="muted">🟢 Categoria e subcategoria sugeridas · 🔴 Precisa de análise ou existe risco de duplicidade/transferência. Verde não significa lançamento aprovado.</p>'+
+  '<div class="preview-toolbar"><div class="preview-filters" role="group" aria-label="Filtrar lançamentos">'+
+   opts.map(([value,label])=>'<button type="button" class="btn small '+(importSession.previewFilter===value?'primary':'')+'" data-preview-filter="'+value+'" aria-pressed="'+(importSession.previewFilter===value)+'">'+label+' ('+(value==='all'?rows.length:value==='identified'?identified:pending)+')</button>').join('')+
+   '</div><label class="preview-search">Buscar <input type="search" id="importPreviewSearch" placeholder="Descrição, categoria, data..." value="'+esc(importSession.previewSearch)+'"></label></div>'+
+  '<div class="tablewrap preview-tablewrap"><table class="preview-table"><thead><tr><th>Situação</th><th>Data</th><th>Descrição</th><th>Valor</th><th>Categoria</th><th>Subcategoria</th></tr></thead><tbody>'+
+   (shown.length?importPreviewRows(shown):'<tr><td colspan="6">Nenhum lançamento encontrado para este filtro.</td></tr>')+
+  '</tbody></table></div>'+
+  '<p class="muted">Mostrando '+shown.length+' de '+rows.length+' linhas reconhecidas. Classificações editadas são sugestões temporárias; nenhum valor é gravado no cofre.</p>'+
+ '</section>';
+}
 function renderImport(){
  const target=$('#importResults');if(!target)return;
  const files=importSession.files;
@@ -76,33 +133,24 @@ function renderImport(){
  $('#importAnalyze').disabled=importSession.reading;
  $('#importAnalyze').textContent=importSession.reading?'Analisando localmente…':'Ler e organizar os arquivos';
  if(!files.length){target.innerHTML='<p class="empty">Selecione arquivos PDF, CSV ou TXT. A prévia é local e não altera o cofre.</p>';renderImportReconciliation();return}
- const summaries=ImportRules.monthly(files);
- const totals={read:files.filter(f=>f.status==='ok').length,rows:files.reduce((n,f)=>n+f.rows.length,0),issues:files.reduce((n,f)=>n+f.unreadable.length,0)+files.filter(f=>f.status!=='ok').length};
+ const rows=ReconcileRules.review(files,state);
  const missingSource=files.filter(f=>f.status==='ok'&&!ImportRules.source(f.source)).length;
- const monthTable=summaries.length?'<div class="tablewrap">'+table(['Mês','Tipo','Linhas reconhecidas','Entradas/valores positivos','Saídas/valores negativos'],summaries.map(s=>[
-  esc(s.month),s.kind==='bank'?'Conta corrente':'Cartão de crédito',String(s.count),importFormatMoney(s.credit),importFormatMoney(s.debit)
- ]))+'</div>':'<p class="muted">Selecione a origem dos arquivos para visualizar o resumo por mês e por tipo.</p>';
- const cards=files.map((f,i)=>{
-  const status=f.status==='ok'?'Texto processado para revisão':'Revisão necessária';
-  const statusClass=f.status==='ok'?'amountpos':'amountneg';
-  const rows=f.rows.slice(0,30);
-  const preview=rows.length?'<div class="tablewrap">'+table(['Data','Descrição original','Valor','Referência'],rows.map(r=>[
-   esc(r.date),esc(r.description),'<span class="'+(r.amountCents<0?'amountneg':'amountpos')+'">'+importFormatMoney(r.amountCents)+'</span>',esc(r.reference)
-  ]))+'</div>':'<p class="muted">Nenhum lançamento reconhecido automaticamente neste arquivo.</p>';
-  const issue=f.error?'<p class="amountneg">'+esc(f.error)+'</p>':
+ const summary=files.map((f,i)=>{
+  const issues=f.error?'<p class="amountneg">'+esc(f.error)+'</p>':
    (f.issues||[]).map(x=>'<p class="amountneg">'+esc(x)+'</p>').join('');
-  const example=(f.unreadable||[]).slice(0,3).map(x=>'<li><span class="muted">'+esc(x.line)+'</span> · '+esc(x.text)+'</li>').join('');
-  return '<details class="import-file-group" '+(i===0?'open':'')+'><summary><b>'+esc(f.name)+'</b><span class="'+statusClass+'">'+status+' · '+f.rows.length+' linhas</span></summary>'+
-   '<div class="import-file-body">'+importFileSourceSelector(f,i)+
-   '<p class="muted">'+esc(f.type.toUpperCase())+' · '+Number(f.size/1024).toFixed(0)+' KB · '+(f.pages?f.pages+' páginas · ':'')+
-   f.rows.length+' movimentações reconhecidas · '+f.unreadable.length+' linhas para revisão. Mostrando até 30 movimentos.</p>'+issue+
-   preview+(example?'<details class="import-unreadable"><summary>Exemplos de linhas não reconhecidas</summary><ul>'+example+'</ul></details>':'')+'</div></details>';
+  const examples=(f.unreadable||[]).slice(0,5).map(x=>'<li>'+esc(x.text)+'</li>').join('');
+  return '<details class="import-file-group"><summary><b>'+esc(f.name)+'</b> · '+f.rows.length+' identificadas · '+f.unreadable.length+' linhas para revisão</summary>'+
+   '<div class="import-file-body">'+importFileSourceSelector(f,i)+issues+
+   (examples?'<details class="import-unreadable"><summary>Linhas não reconhecidas</summary><ul>'+examples+'</ul></details>':'')+
+   '</div></details>';
  }).join('');
- target.innerHTML='<div class="import-summary"><span><b>'+files.length+'</b> arquivos</span><span><b>'+totals.rows+'</b> linhas reconhecidas</span><span><b>'+totals.issues+'</b> alertas/linhas para revisar</span></div>'+
- '<p class="notice warning">Esta é uma <b>prévia de leitura</b>, não uma conciliação aprovada. Não se somam compras de cartões com saídas bancárias. Nenhuma movimentação foi gravada ou enviada. '+(missingSource?'Há '+missingSource+' arquivo(s) sem origem atribuída.':'')+'</p>'+
- '<h3>Resumo preliminar por mês</h3>'+monthTable+
- '<h3>Prévia de cada arquivo</h3>'+cards+
- '<p class="muted">Revise a conciliação provisória abaixo. PDFs digitalizados ou datas incompletas exigem conferência.</p>';
+ const alerts=files.reduce((total,f)=>total+f.unreadable.length+f.issues.length+(f.status==='error'?1:0),0);
+ target.innerHTML='<p class="notice warning">Esta é uma prévia local de leitura. Classificações verdes são <b>sugestões</b> e continuam exigindo sua aprovação. Transferências, saques e pagamentos de fatura não são despesas por presunção. Nenhum lançamento é gravado automaticamente.</p>'+
+  importPreviewTable(rows)+
+  '<details class="import-files-details"><summary>Configurar os '+files.length+' arquivos e revisar '+alerts+' alertas de leitura</summary>'+
+  '<div class="import-summary"><span><b>'+files.length+'</b> arquivos</span><span><b>'+rows.length+'</b> movimentos lidos</span><span><b>'+alerts+'</b> alertas de extração</span></div>'+summary+'</details>'+
+  (missingSource?'<p class="amountneg">Há '+missingSource+' arquivo(s) sem origem selecionada. Informe a instituição antes de conciliar.</p>':'');
+
  renderImportReconciliation();
 }
 async function importAnalyzeFiles(){
@@ -111,7 +159,7 @@ async function importAnalyzeFiles(){
  if(!selected.length){$('#importStatus').textContent='Selecione um ou mais arquivos antes de analisar.';return}
  if(selected.length>100){$('#importStatus').textContent='Limite de 100 arquivos por sessão.';return}
  if(selected.some(f=>f.size>20*1024*1024)||selected.reduce((a,f)=>a+f.size,0)>100*1024*1024){$('#importStatus').textContent='Limite: 20 MB por arquivo e 100 MB no total. Divida arquivos maiores.';return}
- importSession.reading=true;importSession.files=[];renderImport();
+ importSession.reading=true;importSession.files=[];importSession.categoryOverrides.clear();importSession.previewFilter='all';importSession.previewSearch='';renderImport();
  try{
   for(const [i,file] of selected.entries()){
    $('#importStatus').textContent='Analisando arquivo '+(i+1)+' de '+selected.length+' no navegador…';
@@ -131,15 +179,42 @@ async function importAnalyzeFiles(){
 }
 function initImporter(){
  $('#importAnalyze').onclick=()=>importAnalyzeFiles().catch(e=>{$('#importStatus').textContent=e.message||'Falha de leitura';importSession.reading=false;renderImport()});
- $('#importClear').onclick=()=>{importSession.files=[];$('#importFiles').value='';$('#importStatus').textContent='Prévia descartada. Nenhum dado foi gravado.';renderImport()};
+ $('#importClear').onclick=()=>{importSession.categoryOverrides.clear();importSession.previewSearch='';importSession.previewFilter='all';importSession.files=[];$('#importFiles').value='';$('#importStatus').textContent='Prévia descartada. Nenhum dado foi gravado.';renderImport()};
  $('#importFiles').onchange=()=>{$('#importStatus').textContent=$('#importFiles').files?.length+' arquivo(s) selecionado(s). Clique em Ler e organizar.'};
+ $('#importResults').addEventListener('click',e=>{
+  const filter=e.target.closest('[data-preview-filter]')?.dataset.previewFilter;
+  if(!filter)return;
+  if(!['all','identified','pending'].includes(filter))return;
+  importSession.previewFilter=filter;renderImport();
+ });
+ $('#importResults').addEventListener('input',e=>{
+  if(e.target.id!=='importPreviewSearch')return;
+  importSession.previewSearch=e.target.value;
+  const cursor=e.target.selectionStart;
+  renderImport();
+  const input=$('#importPreviewSearch');input?.focus();if(input)input.setSelectionRange(cursor,cursor);
+ });
  $('#importResults').addEventListener('change',e=>{
   const sourceIndex=e.target.dataset.importSource,monthIndex=e.target.dataset.importMonth;
+  const id=e.target.dataset.previewCategory??e.target.dataset.previewSubcategory;
+  if(id!==undefined){
+   const row=ReconcileRules.review(importSession.files,state).find(r=>r.id===id);
+   if(!row)return;
+   const current=importSession.categoryOverrides.get(id)||row.category;
+   const macro=e.target.dataset.previewCategory!==undefined?e.target.value:current?.macro||'';
+   const entry=TaxonomyRules.find(taxonomyCatalog(),macro);
+   const micro=e.target.dataset.previewCategory!==undefined?'':e.target.value;
+   if(entry&&entry.subcategories.some(x=>TaxonomyRules.key(x)===TaxonomyRules.key(micro)))
+    importSession.categoryOverrides.set(id,{macro:entry.name,micro});
+   else if(entry)importSession.categoryOverrides.set(id,{macro:entry.name,micro:''});
+   else importSession.categoryOverrides.delete(id);
+   renderImport();return;
+  }
   const index=sourceIndex!==undefined?Number(sourceIndex):monthIndex!==undefined?Number(monthIndex):-1;
   const f=importSession.files[index];if(!f)return;
   if(sourceIndex!==undefined)f.source=e.target.value;
   if(monthIndex!==undefined)f.referenceMonth=e.target.value;
-  importReparsePdf(f);renderImport();
+  importSession.categoryOverrides.clear();importReparsePdf(f);renderImport();
  });
  renderImport();
 }
