@@ -69,7 +69,6 @@ function interactiveSankey(months,basis,depth){
  if(model.balance>0)destinations.push({name:'Saldo disponível',value:model.balance,type:'balance'});
  const svgHeight=Math.max(355,destinations.length*55+80,selected?selected.children.length*38+105:0);
  const top=45, bottom=svgHeight-35,area=bottom-top;
- const scale=Math.min(1,area/Math.max(1,totalOut))*Math.max(1,totalOut)/Math.max(totalOut,model.income,1);
  // Compute flow widths proportional to cents, reserving space for labels.
  const sumThickness=Math.max(1,totalOut);
  const available=Math.max(120,area-(destinations.length-1)*8);
@@ -82,7 +81,7 @@ function interactiveSankey(months,basis,depth){
  const usableSource=destinations.reduce((sum,d)=>sum+d.value,0);
  nodes.forEach((d,i)=>{
   const color=d.type==='investment'?'#3289db':d.type==='balance'?'#98a4ad':colorExpense(d.value,largest);
-  const sourceH=usableSource>0?sourceHeight*d.value/usableSource:0;
+  const sourceH=d.h;
   paths+=sankeyPath(108,sourceY,360,d.y,d.h,color,'.52');
   sourceY+=sourceH;
   const selectedNode=selected&&d.name===selected.name;
@@ -96,11 +95,12 @@ function interactiveSankey(months,basis,depth){
  });
  let detailPaths='',detailNodes='',detailNote='';
  if(selected&&selected.children.length){
-  let dy=top,from=selected.y;
+  const selectedNode=nodes.find(n=>n.name===selected.name);
+  let dy=top,from=selectedNode.y;
   const children=selected.children.slice(0,12);
   const detailedSum=children.reduce((s,x)=>s+x.value,0);
   children.forEach(c=>{
-   const h=Math.max(3,selected.h*c.value/Math.max(1,selected.value));
+   const h=Math.max(3,selectedNode.h*c.value/Math.max(1,selected.value));
    const col=colorExpense(selected.value,largest);
    detailPaths+=sankeyPath(660,from,735,dy,h,col,'.55');
    detailNodes+='<rect x="735" y="'+dy+'" width="7" height="'+h+'" fill="'+col+'"/><text x="749" y="'+(dy+Math.min(16,Math.max(12,h/2+3)))+'" font-size="12" fill="#243449">'+esc(c.name)+' · '+fmt(c.value/100)+'</text>';
