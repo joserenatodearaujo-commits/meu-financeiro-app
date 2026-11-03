@@ -8,58 +8,76 @@ return `<div class="chart-scroll is-projection"><svg viewBox="0 0 ${W} ${H}" xml
 let projectionSummaryHorizon=3;
 let projectionSelectedMonth='';
 function compactProjection(months){
- const data=months.map(m=>{
-  const commitments=FinanceRules.commitments(state,m).filter(t=>t.recurring||t.cardId);
-  const groups={};
-  for(const t of commitments){const cat=t.macro||'Outros';groups[cat]=(groups[cat]||0)+Number(t.amount)}
-  const total=Object.values(groups).reduce((sum,v)=>sum+v,0);
-  return {month:m,commitments,groups,total};
- });
- const categories=[...new Set(data.flatMap(x=>Object.keys(x.groups)))];
- const categoryTotals=Object.fromEntries(categories.map(c=>[c,data.reduce((s,d)=>s+(d.groups[c]||0),0)]));
- categories.sort((a,b)=>categoryTotals[b]-categoryTotals[a]);
- const maxCategory=Math.max(1,...Object.values(categoryTotals));
- const maxMonth=Math.max(1,...data.map(d=>d.total));
- const allTotal=data.reduce((s,d)=>s+d.total,0);
- const totalCount=data.reduce((s,d)=>s+d.commitments.length,0);
- const topCategory=categories[0]||'—';
- const peak=data.reduce((a,b)=>b.total>a.total?b:a,data[0]);
  const formatMonth=m=>m.slice(5)+'/'+m.slice(2,4);
- const h=280,base=232,chartTop=28,chartH=base-chartTop,chartLeft=48,chartRight=10,w=720,plotWidth=w-chartLeft-chartRight;
- const groupWidth=plotWidth/data.length,innerWidth=groupWidth*.76;
- const barWidth=Math.min(30,innerWidth/Math.max(1,categories.length));
- let svg='';
- for(let tick=0;tick<=4;tick++){
-  const v=maxMonth*tick/4,y=base-chartH*tick/4;
-  svg+='<line x1="'+chartLeft+'" y1="'+y+'" x2="'+(w-chartRight)+'" y2="'+y+'" stroke="#e1e8ef" stroke-dasharray="4 4"/>'+
-    '<text x="'+(chartLeft-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="#6b7787">'+esc(v.toLocaleString('pt-BR',{maximumFractionDigits:0}))+'</text>';
+ const cents=v=>Math.round((Number(v)||0)*100);
+ const money=v=>fmt(v/100);
+ const data=months.map(month=>{
+  const entries=FinanceRules.commitments(state,month).filter(t=>t.recurring||t.cardId);
+  const cards=new Map(),categories=new Map(),allRows=[];
+  for(const e of entries){
+   const amount=cents(e.amount);if(amount<=0)continue;
+   const cat=e.macro||'Outros';
+   const name=e.cardId?(state.accounts||[]).find(a=>a.id===e.cardId)?.name||'Cartão não identificado':'Fora dos cartões';
+   const row={name,category:cat,description:e.description||cat,amount,cardId:e.cardId||'',when:e.when||month};
+   allRows.push(row);
+   if(e.cardId)cards.set(name,(cards.get(name)||0)+amount);
+   categories.set(cat,(categories.get(cat)||0)+amount);
+  }
+  const cardsTotal=[...cards.values()].reduce((a,b)=>a+b,0);
+  const outsideTotal=allRows.filter(x=>!x.cardId).reduce((a,b)=>a+b.amount,0);
+  return {month,rows:allRows,cards,categories,cardsTotal,outsideTotal,total:cardsTotal+outsideTotal};
+ });
+ const totals={cards:data.reduce((s,x)=>s+x.cardsTotal,0),outside:data.reduce((s,x)=>s+x.outsideTotal,0)};
+ const grand=totals.cards+totals.outside;
+ const peak=data.reduce((a,b)=>b.total>a.total?b:a,data[0]);
+ const selected=data.find(x=>x.month===projectionSelectedMonth)||data[0];
+ const categoryTotals=new Map();
+ for(const d of data)for(const [cat,value] of d.categories)categoryTotals.set(cat,(categoryTotals.get(cat)||0)+value);
+ const sortedCats=[...categoryTotals.entries()].sort((a,b)=>b[1]-a[1]);
+ const maxCat=Math.max(1,...sortedCats.map(x=>x[1]));
+ const maxMonth=Math.max(1,...data.map(x=>x.total));
+ const w=720,h=305,left=52,right=16,top=48,bottom=256,plotH=bottom-top;
+ const groupWidth=(w-left-right)/months.length;
+ let drawing='';
+ for(let n=0;n<=4;n++){
+  const val=maxMonth*n/4,y=bottom-plotH*n/4;
+  drawing+='<line x1="'+left+'" y1="'+y+'" x2="'+(w-right)+'" y2="'+y+'" stroke="#e2e8f0" stroke-dasharray="4 4"/>'+
+   '<text x="'+(left-6)+'" y="'+(y+4)+'" fill="#64748b" text-anchor="end" font-size="11">'+esc(Math.round(val/100).toLocaleString('pt-BR'))+'</text>';
  }
  data.forEach((d,i)=>{
-  const xGroup=chartLeft+i*groupWidth+groupWidth/2;
-  const actualWidth=barWidth*categories.length;
-  categories.forEach((c,j)=>{
-   const value=d.groups[c]||0;
-   if(value<=0)return;
-   const bh=value/maxMonth*chartH;
-   const x=xGroup-actualWidth/2+j*barWidth;
-   svg+='<rect x="'+x+'" y="'+(base-bh)+'" width="'+Math.max(2,barWidth-3)+'" height="'+bh+'" rx="4" fill="'+colorExpense(categoryTotals[c],maxCategory)+'"><title>'+esc(c+' · '+formatMonth(d.month)+' · '+fmt(value))+'</title></rect>';
-  });
-  svg+='<text x="'+xGroup+'" y="'+(base+22)+'" text-anchor="middle" font-weight="650" font-size="13" fill="#334155">'+formatMonth(d.month)+'</text>';
+  const x=left+groupWidth*(i+.5),barW=Math.min(95,groupWidth*.49);
+  const hc=d.cardsTotal/maxMonth*plotH,ho=d.outsideTotal/maxMonth*plotH;
+  if(hc>0)drawing+='<rect x="'+(x-barW/2)+'" y="'+(bottom-hc)+'" width="'+barW+'" height="'+hc+'" rx="3" fill="#237ddd"><title>Cartões: '+esc(money(d.cardsTotal))+'</title></rect>';
+  if(ho>0)drawing+='<rect x="'+(x-barW/2)+'" y="'+(bottom-hc-ho)+'" width="'+barW+'" height="'+ho+'" rx="3" fill="#ee942f"><title>Fora dos cartões: '+esc(money(d.outsideTotal))+'</title></rect>';
+  drawing+='<text x="'+x+'" y="'+Math.max(18,bottom-hc-ho-10)+'" fill="#243449" font-size="13" font-weight="700" text-anchor="middle">'+esc(money(d.total))+'</text>'+
+  '<text x="'+x+'" y="'+(bottom+22)+'" fill="#344459" font-size="13" font-weight="700" text-anchor="middle">'+formatMonth(d.month)+'</text>';
  });
- const monthCards=data.map(d=>'<button type="button" class="projection-month'+(projectionSelectedMonth===d.month?' active':'')+'" data-projection-month="'+esc(d.month)+'" aria-label="Detalhar '+esc(formatMonth(d.month))+'"><strong>'+fmt(d.total)+'</strong><span>'+formatMonth(d.month)+'</span></button>').join('');
- const selected=data.find(d=>d.month===projectionSelectedMonth);
- const monthlyDetails=selected?'<div class="projection-detail"><div class="sectionrow"><strong>Compromissos de '+formatMonth(selected.month)+'</strong><button type="button" class="btn small" data-projection-close>Fechar</button></div>'+
-  (selected.commitments.length?selected.commitments.map(t=>'<div class="projection-detail-row"><span>'+esc(t.description||t.macro||'Compromisso')+' · '+esc(t.macro||'Outros')+'</span><strong>'+fmt(t.amount)+'</strong></div>').join(''):'<p class="muted">Não há compromissos cadastrados para este mês.</p>')+'</div>':'';
- const categoriesLegend=categories.length?categories.map(c=>'<span><i class="dot" style="background:'+colorExpense(categoryTotals[c],maxCategory)+'"></i>'+esc(c)+'</span>').join(''):'<span>Sem compromissos cadastrados para o período.</span>';
- return '<section class="projection-compact" aria-label="Projeção dos compromissos futuros">'+
-  '<div class="projection-switch"><span class="muted">A partir de '+formatMonth(data[0].month)+' · compromissos previstos · v2.24</span><div class="projection-toggle" role="group" aria-label="Horizonte da projeção">'+
-  [3,6].map(n=>'<button type="button" data-projection-horizon="'+n+'" aria-pressed="'+(projectionSummaryHorizon===n)+'" class="'+(projectionSummaryHorizon===n?'active':'')+'">'+n+' meses</button>').join('')+'</div></div>'+
-  '<div class="projection-plot" role="group" aria-label="Gráfico de despesas futuras por categoria">'+
-  (categories.length?'<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Colunas agrupadas de compromissos previstos nos próximos '+months.length+' meses" xmlns="http://www.w3.org/2000/svg">'+svg+'</svg>':'<div class="projection-empty">Nenhuma despesa recorrente ou fatura futura registrada.</div>')+'</div>'+
-  '<div class="projection-months">'+monthCards+'</div><div class="legend projection-legend">'+categoriesLegend+'</div>'+
-  '<div class="projection-kpis"><div><small>Total projetado</small><strong>'+fmt(allTotal)+'</strong></div><div><small>Maior categoria</small><strong>'+esc(topCategory)+'</strong></div><div><small>Mês de maior gasto</small><strong>'+formatMonth(peak.month)+'</strong></div><div><small>Compromissos previstos</small><strong>'+totalCount+'</strong></div></div>'+
-  monthlyDetails+'<button type="button" class="btn projection-details-button" data-go="projecoes">Ver detalhamento completo por mês ›</button></section>';
+ const monthsControls=data.map(d=>'<button type="button" class="projection-month'+(selected.month===d.month?' active':'')+'" data-projection-month="'+d.month+'" aria-pressed="'+(selected.month===d.month)+'"><strong>'+money(d.total)+'</strong><span>'+formatMonth(d.month)+'</span></button>').join('');
+ const cardList=[...selected.cards.entries()].sort((a,b)=>b[1]-a[1]);
+ const maxCard=Math.max(1,...cardList.map(x=>x[1]));
+ const cardRows=cardList.map(([name,value])=>'<div class="future-card-row"><span>'+esc(name)+'</span><div class="future-bar-track"><div style="width:'+(value/maxCard*100).toFixed(1)+'%"></div></div><strong>'+money(value)+'</strong></div>').join('');
+ const catRows=sortedCats.slice(0,6).map(([name,value])=>'<button class="future-category-row" type="button" data-future-category="'+esc(name)+'" aria-pressed="'+(projectionCategory===name)+'"><span>'+esc(name)+'</span><span class="future-bar-track"><span style="width:'+(value/maxCat*100).toFixed(1)+'%;background:'+colorExpense(value,maxCat)+'"></span></span><strong>'+money(value)+'</strong><em>'+(grand?((value/grand)*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%':'0%')+'</em></button>').join('');
+ const categoryRows=projectionCategory?data.flatMap(d=>d.rows.filter(r=>r.category===projectionCategory).map(r=>({...r,month:d.month}))):[];
+ const breakdown=projectionCategory?'<div class="projection-detail"><div class="sectionrow"><strong>'+esc(projectionCategory)+' — compras e vencimentos</strong><button type="button" class="btn small" data-future-category-close>Fechar</button></div>'+categoryRows.map(r=>'<div class="projection-detail-row"><span>'+formatMonth(r.month)+' · '+esc(r.description)+' · '+esc(r.name)+'</span><strong>'+money(r.amount)+'</strong></div>').join('')+'</div>':'';
+ const pct=grand?(totals.cards/grand*100).toLocaleString('pt-BR',{maximumFractionDigits:0}):'0';
+ const cards=cardRows||'<p class="muted">Nenhuma fatura pendente cadastrada neste mês.</p>';
+ const categories=catRows||'<p class="muted">Nenhum compromisso previsto no período.</p>';
+ return '<section class="projection-compact future-overview" aria-label="Impacto de despesas futuras">'+
+ '<div class="projection-switch"><span class="muted">Previsão por vencimento · a partir de '+formatMonth(data[0].month)+'</span><div class="projection-toggle" role="group" aria-label="Horizonte da projeção">'+
+ [3,6].map(n=>'<button type="button" data-projection-horizon="'+n+'" aria-pressed="'+(projectionSummaryHorizon===n)+'" class="'+(projectionSummaryHorizon===n?'active':'')+'">'+n+' meses</button>').join('')+'</div></div>'+
+ '<div class="future-kpis"><div><small>Total previsto</small><strong>'+money(grand)+'</strong></div><div><small>Todos os cartões</small><strong>'+money(totals.cards)+'</strong></div><div><small>Fora dos cartões</small><strong>'+money(totals.outside)+'</strong></div><div><small>Maior mês</small><strong>'+formatMonth(peak.month)+'</strong></div></div>'+
+ '<div class="future-section"><h3>Desembolso mensal</h3><div class="future-chart-legend"><span><i style="background:#237ddd"></i>Cartões (faturas)</span><span><i style="background:#ee942f"></i>Outras despesas</span></div>'+
+ '<div class="projection-plot"><svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Desembolso previsto por mês, dividido entre cartões de crédito e outras despesas" xmlns="http://www.w3.org/2000/svg">'+drawing+'</svg></div>'+
+ '<div class="projection-months">'+monthsControls+'</div></div>'+
+ '<div class="future-two-columns"><div class="future-section"><div class="future-section-header"><h3>Faturas por cartão</h3><span class="muted">Mês: '+formatMonth(selected.month)+'</span></div>'+cards+
+ '<div class="future-card-total"><span>Total de todos os cartões</span><strong>'+money(selected.cardsTotal)+'</strong></div></div>'+
+ '<div class="future-section"><h3>Despesas por categoria</h3><p class="muted future-note">Todo o período selecionado · cartões e despesas fora dos cartões</p>'+categories+breakdown+'</div></div>'+
+ '<div class="future-period-summary"><strong>Resumo do período</strong><span>Cartões: '+money(totals.cards)+' ('+pct+'%)</span><span>Outras despesas: '+money(totals.outside)+'</span><span>Total: '+money(grand)+'</span></div>'+
+ '<p class="muted future-note">Estimativas baseadas nas despesas recorrentes e parcelas ainda pendentes. Faturas já pagas não entram novamente na previsão. Não inclui compras futuras ainda não registradas.</p>'+
+ '<button type="button" class="btn projection-details-button" data-go="projecoes">Ver vencimentos e detalhamento ›</button></section>';
 }
+let projectionCategory='';
+
 document.addEventListener('click',e=>{
  const horizon=e.target.closest('[data-projection-horizon]');
  if(horizon){projectionSummaryHorizon=Number(horizon.dataset.projectionHorizon)===6?6:3;projectionSelectedMonth='';summary();return}
