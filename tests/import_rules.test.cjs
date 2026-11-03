@@ -44,6 +44,10 @@ parsed=R.fromPdfLines([{page:1,text:'15/01 MERCADO 45,80'},{page:1,text:'27/12 L
 eq(parsed.rows.length,2,'Fatura com datas sem ano e total ignorado');
 eq(parsed.rows[0].date,'2026-01-15','Janeiro mantém ano da referência');
 eq(parsed.rows[1].date,'2025-12-27','Dezembro pertence ao ano anterior para fatura de janeiro');
+eq(parsed.rows[1].invoiceMonth,'2026-01','Compra de dezembro agrupada na fatura janeiro');
+let invoiceGroups=R.monthly([{source:'santander-card',rows:parsed.rows}]);
+eq(invoiceGroups.length,1,'Uma fatura não vira dois meses por causa da compra anterior');
+eq(invoiceGroups[0].month,'2026-01','Resumo usa mês da fatura');
 parsed=R.fromPdfLines([{page:1,text:'15/01 MERCADO 45,80'}]);
 eq(parsed.rows.length,0,'Sem mês de referência não inventa o ano');
 ok(parsed.issues.length>0,'Informa necessidade de mês de referência');
