@@ -7,16 +7,16 @@ const field=(name,label,value='',type='text',rest='')=>`<div class="field"><labe
  const opts=[['bank','Conta bancária / Pix'],['cash','Carteira / Dinheiro em espécie'],['card','Cartão de crédito']];
  const label=opts.map(([v,l])=>'<option value="'+v+'" '+(v===typ?'selected':'')+'>'+l+'</option>').join('');
  const today=new Date().toISOString().slice(0,10);
- const opening=Number(original?.openingBalance||0);
+ const opening=Number(original?.openingBalance??0);
  modal(editing?'Editar conta / cartão':'Adicionar conta ou cartão',
   '<div class="formgrid">'+
   field('name','Apelido',original?.name||'','text','maxlength="70" required')+
   '<div class="field"><label>Tipo</label><select id="accountType" name="type" '+(editing?'disabled':'')+'>'+label+'</select></div>'+
-  '<div class="field account-opening"><label>Saldo inicial (R$)</label><input name="openingBalance" type="number" step="0.01" min="0" value="'+opening+'" required></div>'+
-  '<div class="field account-opening"><label>Data de referência do saldo</label><input name="openingDate" type="date" value="'+esc(original?.openingDate||today)+'" required></div>'+
+  '<div class="field account-opening"><label>Saldo oficial de abertura (R$)</label><input name="openingBalance" type="number" step="0.01" value="'+opening+'" required></div>'+
+  '<div class="field account-opening"><label>Data de referência do saldo</label><input name="openingDate" type="date" value="'+esc(original?.openingDate||'2026-01-01')+'" required></div>'+
   '<div class="field account-card"><label>Fechamento (dia)</label><input name="closing" type="number" min="1" max="28" value="'+(original?.closing||5)+'"></div>'+
   '<div class="field account-card"><label>Vencimento (dia)</label><input name="due" type="number" min="1" max="28" value="'+(original?.due||15)+'"></div></div>'+
-  '<p class="muted">Saldo inicial é um ponto de partida, não receita. Movimentações anteriores à data de referência não alteram esse saldo. Contas antigas não serão convertidas automaticamente.</p>',
+  '<p class="muted">Para conciliar 2026 desde janeiro, informe o saldo oficial da conta em 01/01/2026, antes da primeira movimentação. Pode ser negativo se o extrato indicar saldo devedor. Saldo inicial não é receita e não altera movimentações antigas.</p>',
   async f=>{
    const x=Object.fromEntries(f.entries());x.name=x.name.trim();x.type=editing?typ:x.type;
    if(!x.name||!['bank','cash','card'].includes(x.type))throw Error('Informe nome e tipo válidos.');
@@ -27,7 +27,7 @@ const field=(name,label,value='',type='text',rest='')=>`<div class="field"><labe
     x.openingBalance=0;x.openingDate='';
    }else{
     x.openingBalance=Math.round(Number(x.openingBalance)*100)/100;
-    if(!Number.isFinite(x.openingBalance)||x.openingBalance<0||!/^\d{4}-\d{2}-\d{2}$/.test(x.openingDate))throw Error('Informe um saldo inicial válido e a data de referência.');
+    if(!Number.isFinite(x.openingBalance)||!/^\d{4}-\d{2}-\d{2}$/.test(x.openingDate))throw Error('Informe um saldo inicial válido e a data de referência.');
     x.closing=1;x.due=10;
    }
    if(editing)state.accounts=state.accounts.map(a=>a.id===existingId?{...a,...x,id:existingId}:a);
