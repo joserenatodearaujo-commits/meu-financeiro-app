@@ -10,7 +10,7 @@ const ReconcileRules=Object.freeze({
    if(f.status!=='ok'||!source)return;
    (f.rows||[]).forEach((r,ri)=>{
     if(!ImportRules.date(r.date)||!Number.isSafeInteger(r.amountCents)||!r.description)return;
-    out.push({id:fi+':'+ri,fileIndex:fi,rowIndex:ri,source:f.source,kind:source.kind,date:r.date,description:String(r.description),amountCents:r.amountCents,reference:r.reference||'',filename:f.name});
+    out.push({id:fi+':'+ri,fileIndex:fi,rowIndex:ri,source:f.source,kind:source.kind,date:r.date,description:String(r.description),amountCents:r.amountCents,reference:r.reference||'',invoiceMonth:r.invoiceMonth||'',filename:f.name});
    });
   });
   return out;
@@ -106,14 +106,14 @@ const ReconcileRules=Object.freeze({
    const source=ImportRules.source(f.source);
    if(f.status!=='ok'||!source)continue;
    for(const r of f.rows||[]){
-    const month=r.date.slice(0,7),key=f.source+'|'+month;
+    const month=source.kind==='card'&&r.invoiceMonth?r.invoiceMonth:r.date.slice(0,7),key=f.source+'|'+month;
     if(!monthMap.has(key))monthMap.set(key,{month,source:f.source,kind:source.kind,count:0,positive:0,negative:0,flagged:0,unreadable:0,files:new Set()});
     const item=monthMap.get(key);item.count++;item.files.add(f.name);
     if(r.amountCents>0)item.positive+=r.amountCents;else item.negative+=-r.amountCents;
    }
   }
   for(const row of matched){
-   const rec=monthMap.get(row.source+'|'+row.date.slice(0,7));
+   const rec=monthMap.get(row.source+'|'+(row.kind==='card'&&row.invoiceMonth?row.invoiceMonth:row.date.slice(0,7)));
    if(rec&&row.status!=='review')rec.flagged++;
   }
   // Linhas não reconhecidas sem data segura bloqueiam o fechamento de TODOS os meses dessa fonte.
