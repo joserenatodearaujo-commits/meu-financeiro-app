@@ -318,14 +318,15 @@ def test_import_http(browser):
         p.locator('#passConfirm').fill('SenhaTestes2026!')
         p.locator('#authButton').click()
         p.locator('#app:not(.hide)').wait_for(timeout=8000)
+        p.evaluate("""()=>{state.accounts.push({id:'bank-test',name:'Inter oficial',type:'bank',openingDate:'2026-01-01',openingBalance:100});renderAll()}""")
         # V2.11: seleção múltipla, importação 100% local e PDF.js empacotado.
         p.locator('[data-page="importacao"]').click()
         assert p.locator('#importFiles').get_attribute('multiple') is not None
         p.locator('#importFiles').set_input_files([
             {'name':'Inter_Conta_10-2026.csv','mimeType':'text/csv',
-             'buffer':b'Data Lancamento;Historico;Valor\n10/10/2026;PIX RECEBIDO;100,00\n11/10/2026;COMPRA MERCADO;-25,00'},
+             'buffer':b'Data Lancamento;Historico;Valor\n10/01/2026;PIX RECEBIDO;100,00\n11/01/2026;COMPRA MERCADO;-25,00'},
             {'name':'Itau_Conta_10-2026.txt','mimeType':'text/plain',
-             'buffer':b'11/10/2026 SAQUE EM DINHEIRO -60,00'},
+             'buffer':b'11/01/2026 SAQUE EM DINHEIRO -60,00'},
             {'name':'Santander_Cartao_10-2026.pdf','mimeType':'application/pdf','buffer':fake_financial_pdf()},
         ])
         p.locator('#importAnalyze').click()
@@ -340,10 +341,11 @@ def test_import_http(browser):
         assert p.locator('#importResults [data-import-source]').count()==3
         # V2.12: revisão mensal e conferência independente de saldo bancário.
         assert p.locator('#importReview').get_by_text('Conciliação e fechamento por mês').count()==1
-        assert p.locator('#reconcileMonth').input_value()=='2026-10'
+        assert p.locator('#reconcileMonth').input_value()=='2026-01'
         assert p.locator('#importReview').get_by_text('Saque / espécie',exact=False).count()>=1
         assert p.evaluate('state.importCheckpoints.length')==0
-        p.locator('#reconcileOpening').fill('100,00')
+        p.locator('#reconcileAccount').select_option('bank-test')
+        assert p.locator('#reconcileOpening').input_value()=='100,00'
         p.locator('#reconcileClosing').fill('175,01')
         p.locator('#reconcileCoverage').check()
         p.locator('#reconcileCheck').click()
