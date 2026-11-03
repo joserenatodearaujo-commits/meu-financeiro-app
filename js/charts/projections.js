@@ -65,5 +65,6 @@ document.addEventListener('click',e=>{
  if(horizon){projectionSummaryHorizon=Number(horizon.dataset.projectionHorizon)===6?6:3;projectionSelectedMonth='';summary();return}
  const month=e.target.closest('[data-projection-month]');
  if(month){projectionSelectedMonth=projectionSelectedMonth===month.dataset.projectionMonth?'':month.dataset.projectionMonth;summary();return}
- if(e.target.closest('[data-projection-close]')){projectionSelectedMonth='';summary()}
+ if(e.target.closest('[data-projection-close]')){projectionSelectedMonth='';summary();return}
+ if(e.target.closest('.projection-compact [data-go="projecoes"]')){page('projecoes')}
 });
