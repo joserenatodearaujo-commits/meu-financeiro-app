@@ -187,3 +187,38 @@ body.sankey-is-expanded{overflow:hidden}
  .sankey-toolbar>.btn{min-height:36px}
  .sankey-expanded{inset:3px;padding:10px}
 }
+
+
+/* v2.23: compact grouped forecast (3 months default, six optional). */
+.projection-compact{width:100%;min-width:0}
+.projection-switch{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0 8px}
+.projection-toggle{display:inline-flex;border:1px solid #cbd7df;border-radius:10px;overflow:hidden;flex-shrink:0;background:#fff}
+.projection-toggle button{background:transparent;color:#344459;border:0;padding:9px 14px;min-height:38px;font-weight:700;white-space:nowrap}
+.projection-toggle button.active{background:#18864d;color:#fff}
+.projection-plot{width:100%;max-width:100%;min-width:0;overflow:hidden}
+.projection-plot svg{width:100%;height:auto;display:block;min-width:0;max-width:100%;background:#fff}
+.projection-empty{padding:35px 12px;text-align:center;background:#f8fafc;border-radius:9px;color:#637184}
+.projection-months{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:5px 0 10px}
+.projection-month{min-width:0;border:1px solid #e2e8f0;background:#f7f9fb;border-radius:9px;padding:9px 5px;display:flex;flex-direction:column;gap:4px;align-items:center;color:#334155}
+.projection-month.active{border-color:#24a569;background:#eaf8ef}
+.projection-month strong{font-size:clamp(11px,1.7vw,15px);overflow-wrap:anywhere;line-height:1.2}
+.projection-month span{font-size:11px;color:#697789}
+.projection-legend{margin:12px 0}
+.projection-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
+.projection-kpis>div{min-width:0;padding:11px;border:1px solid #e3eae6;background:#f2f9f4;border-radius:11px;display:flex;flex-direction:column;gap:5px}
+.projection-kpis small{font-size:11px;color:#627584}
+.projection-kpis strong{font-size:clamp(12px,1.55vw,17px);color:#263547;overflow-wrap:anywhere}
+.projection-detail{background:#fbfdfd;border:1px solid #d9e8e0;border-radius:11px;padding:12px;margin-bottom:11px}
+.projection-detail-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid #e7edf0;font-size:12px}
+.projection-detail-row strong{white-space:nowrap}
+.projection-details-button{width:100%;text-align:left;font-weight:700;min-height:44px}
+@media(max-width:730px){
+ .projection-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .projection-switch{align-items:stretch}
+ .projection-switch>.muted{font-size:12px}
+ .projection-plot svg{width:100%;min-width:0;max-width:100%}
+ .projection-months{gap:5px}
+ .projection-month{padding:8px 2px}
+ .projection-month strong{font-size:12px}
+ .projection-kpis strong{font-size:14px}
+}
