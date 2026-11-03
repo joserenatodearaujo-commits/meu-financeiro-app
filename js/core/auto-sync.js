@@ -260,6 +260,64 @@ save=async function(){
   }else await writeVault(encrypted);
  });
 };
+// Google OAuth (PKCE). The verifier never leaves this device until the code exchange.
+const AUTO_GOOGLE_VERIFIER='meufin-google-pkce-verifier-v1';
+const AUTO_GOOGLE_STARTED='meufin-google-pkce-started-v1';
+function autoBase64Url(data){
+ return btoa(String.fromCharCode(...data)).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+}
+function autoOAuthRedirect(){
+ // Keep the existing GitHub Pages origin/path so IndexedDB remains unchanged.
+ return location.origin+location.pathname;
+}
+async function autoGoogleStart(){
+ if(!globalThis.crypto?.subtle||!globalThis.isSecureContext)throw Error('O acesso Google requer HTTPS.');
+ if(!navigator.onLine)throw Error('Conecte-se à internet para vincular sua conta Google.');
+ const verifier=autoBase64Url(crypto.getRandomValues(new Uint8Array(48)));
+ const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier));
+ const challenge=autoBase64Url(new Uint8Array(hash));
+ sessionStorage.setItem(AUTO_GOOGLE_VERIFIER,verifier);
+ sessionStorage.setItem(AUTO_GOOGLE_STARTED,String(Date.now()));
+ const query=new URLSearchParams({provider:'google',redirect_to:autoOAuthRedirect(),
+  code_challenge:challenge,code_challenge_method:'s256'});
+ location.assign(AUTO_URL+'/auth/v1/authorize?'+query.toString());
+}
+async function autoGoogleComplete(){
+ const query=new URLSearchParams(location.search);
+ // Only handle OAuth callbacks started by this exact browser session.
+ const verifier=sessionStorage.getItem(AUTO_GOOGLE_VERIFIER);
+ if(!verifier)return;
+ const started=Number(sessionStorage.getItem(AUTO_GOOGLE_STARTED));
+ const code=query.get('code'),authError=query.get('error');
+ const clear=()=>{
+  sessionStorage.removeItem(AUTO_GOOGLE_VERIFIER);
+  sessionStorage.removeItem(AUTO_GOOGLE_STARTED);
+  query.delete('code');query.delete('error');query.delete('error_description');
+  const qs=query.toString();
+  history.replaceState(null,'',location.pathname+(qs?'?'+qs:'')+location.hash);
+ };
+ if(!code&&!authError)return;
+ try{
+  if(!started||Date.now()-started>10*60*1000)throw Error('Login expirado. Inicie novamente.');
+  if(authError)throw Error('Google não autorizou a entrada: '+(query.get('error_description')||authError));
+  const response=await autoHttp('/auth/v1/token?grant_type=pkce',{
+    method:'POST',body:{auth_code:code,code_verifier:verifier}});
+  if(!response?.access_token||!response?.refresh_token||!response?.user?.id)
+    throw Error('O Google não retornou uma sessão válida do Supabase.');
+  // An existing device must NEVER silently switch to a different cloud user.
+  const existing=await autoLocal('autoSyncMeta','get');
+  if(existing?.userId&&existing.userId!==response.user.id)
+    throw Error('Esta conta Google é diferente da conta já vinculada neste aparelho. O cofre local foi preservado; entre com a conta original.');
+  if(auto.session?.user?.id&&auto.session.user.id!==response.user.id)
+    throw Error('Outra conta já estava ativa. Nenhum cofre foi substituído.');
+  autoSessionSave({...response,expires_at:Math.floor(Date.now()/1000)+(response.expires_in||3600)});
+  autoVisible('pending','Conta Google autenticada. Desbloqueie o cofre para sincronizar.');
+  if(auto.unlocked)await autoRefresh();
+ }catch(e){
+  autoVisible('offline','Não foi possível entrar com Google: '+e.message,true);
+  const error=$('#authError');if(error)error.textContent='Login Google: '+e.message;
+ }finally{clear()}
+}
 async function autoSignIn(mode){
  const email=$('#autoEmail').value.trim(),password=$('#autoPassword').value;
  if(!email||password.length<12)throw Error('Informe e-mail e senha de conta com pelo menos 12 caracteres.');
@@ -276,6 +334,8 @@ async function autoSignIn(mode){
 }
 function autoInit(){
  const panel=$('#autoConnectPanel'),form=$('#autoConnectForm');
+ $('#autoGoogleLogin').onclick=()=>autoGoogleStart().catch(err=>autoVisible('offline',err.message,true));
+ autoGoogleComplete().catch(err=>autoVisible('offline',err.message,true));
  form.onsubmit=e=>{e.preventDefault();autoSignIn('login').catch(err=>autoVisible('offline',err.message,true))};
  $('#autoSignUp').onclick=()=>autoSignIn('signup').catch(err=>autoVisible('offline',err.message,true));
  $('#autoOfficialPass').onchange=()=>autoRefresh();
