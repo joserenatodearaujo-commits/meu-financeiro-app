@@ -1,6 +1,6 @@
 'use strict';
 // Interface de conciliação cruzada: apenas sugestões e conferências de saldo bancário.
-const reconcileSession={month:'',opening:'',closing:'',coverage:false};
+const reconcileSession={month:'',opening:'',closing:'',coverage:false,accountBySource:{}};
 const reconcileMoney=c=>Number(c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const reconcileLabel={review:'Classificar',duplicate:'Possível repetição',transfer:'Transferência provável',cash:'Saque / espécie',pix:'Pix a identificar',invoice:'Pagamento de fatura?',existing:'Possível lançamento já cadastrado'};
 function renderImportReconciliation(){
@@ -24,10 +24,14 @@ function renderImportReconciliation(){
    stillValid?'Saldo conferido anteriormente · classificação pendente':saved?'Conferência antiga (movimentos diferentes)':'Conferência pendente'];
  });
  const bank=monthly.filter(x=>x.kind==='bank');
+ const accountOptions='<option value="">Selecione a conta do extrato</option>'+
+  (state?.accounts||[]).filter(a=>a.type==='bank').map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>').join('');
  const banks=bank.length?'<div class="field"><label for="reconcileBankSource">Conta a conferir</label><select id="reconcileBankSource">'+
   bank.map(x=>'<option value="'+esc(x.source)+'">'+esc(ImportRules.source(x.source)?.label||x.source)+'</option>').join('')+'</select></div>'+
+  '<div class="field"><label for="reconcileAccount">Conta bancária cadastrada</label><select id="reconcileAccount">'+accountOptions+'</select></div>'+
+  '<p class="muted">Janeiro usa o saldo oficial de 01/01 da conta; os demais meses usam o saldo final conferido no mês anterior. Edite o saldo em Contas e cartões.</p>'+
   '<div class="formgrid reconcile-inputs"><div class="field"><label for="reconcileOpening">Saldo de abertura do mês, antes das movimentações (R$)</label>'+
-  '<input type="text" id="reconcileOpening" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>'+
+  '<input type="text" id="reconcileOpening" inputmode="decimal" readonly placeholder="Saldo de janeiro obrigatório"></div>'+
   '<div class="field"><label for="reconcileClosing">Saldo no último dia do mês (R$)</label>'+
   '<input type="text" id="reconcileClosing" inputmode="decimal" placeholder="0,00" autocomplete="off"></div></div>'+
   '<label class="reconcile-check"><input id="reconcileCoverage" type="checkbox"> Confirmo que o extrato cobre o mês inteiro e que os saldos informados são oficiais.</label>'+
@@ -58,31 +62,45 @@ function renderImportReconciliation(){
  $('#reconcileMonth').onchange=e=>{reconcileSession.month=e.target.value;renderImportReconciliation()};
 }
 function reconcileBindBank(monthly,rows){
- const source=$('#reconcileBankSource'),opening=$('#reconcileOpening'),closing=$('#reconcileClosing'),coverage=$('#reconcileCoverage'),msg=$('#reconcileMessage');
+ const source=$('#reconcileBankSource'),account=$('#reconcileAccount'),
+  opening=$('#reconcileOpening'),closing=$('#reconcileClosing'),
+  coverage=$('#reconcileCoverage'),msg=$('#reconcileMessage');
  const current=()=>monthly.find(x=>x.source===source.value);
+ const baseline=()=>ReconcileRules.openingForMonth(state,account.value,current()?.month||'');
  const update=()=>{
   const data=current();if(!data)return;
-  const saved=(state?.importCheckpoints||[]).find(x=>x.month===data.month&&x.source===data.source);
-  opening.value=saved?reconcileMoney(saved.opening).replace(/[^\d.,-]/g,'').trim():'';
-  closing.value=saved?reconcileMoney(saved.closing).replace(/[^\d.,-]/g,'').trim():'';
+  const previous=(state?.importCheckpoints||[]).find(x=>x.month===data.month&&x.source===data.source);
+  const id=reconcileSession.accountBySource[data.source]||previous?.accountId||'';
+  account.value=[...account.options].some(o=>o.value===id)?id:'';
+  const saved=previous?.accountId===account.value?previous:null;
+  const start=baseline();
+  opening.value=start.ok?reconcileMoney(start.opening).replace(/[^\\d.,-]/g,'').trim():'';
+  closing.value=saved?reconcileMoney(saved.closing).replace(/[^\\d.,-]/g,'').trim():'';
   coverage.checked=!!saved?.coverage;
-  msg.textContent=saved?'Conferência anterior carregada. Verifique os valores antes de confirmar novamente.':'Informe os saldos reais e confirme a cobertura do mês.';
+  msg.textContent=start.ok?start.origin+'. Informe o saldo final oficial e confirme cobertura completa.':start.reason;
+  $('#reconcileSave').disabled=!start.ok;
  };
  const test=()=>{
-  const data=current(),op=ImportRules.cents(opening.value),cl=ImportRules.cents(closing.value);
+  const data=current(),start=baseline(),cl=ImportRules.cents(closing.value);
+  if(!start.ok){msg.textContent=start.reason;return {data,check:{ok:false,reason:start.reason}}}
   const duplicates=rows.filter(r=>r.source===data.source&&r.date.slice(0,7)===data.month&&r.status==='duplicate').length;
-  const check=ReconcileRules.checkBankMonth(data,op,cl,coverage.checked,duplicates);
+  const check=ReconcileRules.checkBankMonth(data,start.opening,cl,coverage.checked,duplicates);
   msg.textContent=check.reason+(check.expected!==undefined?' · Saldo esperado: '+reconcileMoney(check.expected)+' · Diferença: '+reconcileMoney(check.difference):'');
-  return {data,op,cl,check};
+  return {data,op:start.opening,cl,check};
  };
- source.onchange=update;update();
+ source.onchange=update;
+ account.onchange=()=>{reconcileSession.accountBySource[source.value]=account.value;update()};
+ update();
  $('#reconcileCheck').onclick=test;
  $('#reconcileSave').onclick=async()=>{
   if(!state){msg.textContent='Desbloqueie o cofre antes de salvar.';return}
   const {data,op,cl,check}=test();
   if(!check.ok)return;
-  if(!confirm('Gravar somente o RESUMO do saldo bancário conferido no cofre criptografado? Não serão importados lançamentos nem alterados saldos de contas.'))return;
-  const record={id:uid(),source:data.source,month:data.month,opening:op,closing:cl,positive:data.positive,negative:data.negative,count:data.count,coverage:true,checkedAt:new Date().toISOString(),status:'bank-balance-checked'};
+  if(!account.value){msg.textContent='Escolha a conta bancária correspondente.';return}
+  if(!confirm('Salvar conferência da conta selecionada? Não cria despesas nem altera o saldo inicial.'))return;
+  const record={id:uid(),accountId:account.value,source:data.source,month:data.month,
+   opening:op,closing:cl,positive:data.positive,negative:data.negative,count:data.count,
+   coverage:true,checkedAt:new Date().toISOString(),status:'bank-balance-checked'};
   const prev=state.importCheckpoints||[];
   state.importCheckpoints=[...prev.filter(x=>x.source!==record.source||x.month!==record.month),record];
   const btn=$('#reconcileSave');btn.disabled=true;
