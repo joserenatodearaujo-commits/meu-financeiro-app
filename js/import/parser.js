@@ -130,23 +130,23 @@ const ImportRules=Object.freeze({
  fromPdfLines(lines,options={}){
   // Card statements frequently show DD/MM without a year. Only resolve it when
   // the user has explicitly chosen a statement reference month (YYYY-MM).
-  const referenceMonth=/^\\d{4}-(0[1-9]|1[0-2])$/.test(options.referenceMonth||'')?options.referenceMonth:'';
+  const referenceMonth=/^\d{4}-(0[1-9]|1[0-2])$/.test(options.referenceMonth||'')?options.referenceMonth:'';
   const card=options.kind==='card';
   const rows=[],unreadable=[],issues=[],pending=[];
-  const skip=/^(?:total(?:\\s+(?:da|de|do|dos|das))?\\s+(?:fatura|compras|pagamentos|creditos|debitos|lan[cç]amentos)|saldo(?:\\s+(?:anterior|atual|final|total))?|pagamento\\s+m[ií]nimo|vencimento|limite\\s+(?:disponivel|total)|resumo|subtotal|valor\\s+total|encargos\\s+totais|parcelamento\\s+da\\s+fatura)/i;
-  const datePrefix=/^(\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}|\\d{1,2}[/-]\\d{1,2}(?:[/-]\\d{2,4})?)\\s+(.+)$/;
-  const valueSuffix=/^(.*?)\\s+(?:R\\$\\s*)?(\\(?[-+]?\\d[\\d.,]*[-]?[cCdD]?\\)?)\\s*$/;
+  const skip=/^(?:total(?:\s+(?:da|de|do|dos|das))?\s+(?:fatura|compras|pagamentos|creditos|debitos|lan[cç]amentos)|saldo(?:\s+(?:anterior|atual|final|total))?|pagamento\s+m[ií]nimo|vencimento|limite\s+(?:disponivel|total)|resumo|subtotal|valor\s+total|encargos\s+totais|parcelamento\s+da\s+fatura)/i;
+  const datePrefix=/^(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[/-]\d{1,2}(?:[/-]\d{2,4})?)\s+(.+)$/;
+  const valueSuffix=/^(.*?)\s+(?:R\$\s*)?(\(?[-+]?\d[\d.,]*[-]?[cCdD]?\)?)\s*$/;
   for(const item of lines){
-   const line=String(item.text||'').trim().replace(/\\s+/g,' ');
+   const line=String(item.text||'').trim().replace(/\s+/g,' ');
    if(!line)continue;
    const match=line.match(datePrefix);
-   if(!match){if(/(?:\\d{1,2}[/-]\\d{1,2}|R\\$)/.test(line))unreadable.push({line:item.page,text:line.slice(0,220)});continue}
+   if(!match){if(/(?:\d{1,2}[/-]\d{1,2}|R\$)/.test(line))unreadable.push({line:item.page,text:line.slice(0,220)});continue}
    const remainder=match[2].trim();
    if(skip.test(remainder))continue;
    const money=remainder.match(valueSuffix);
    if(!money||!money[1]?.trim()){unreadable.push({line:item.page,text:line.slice(0,220)});continue}
    let date=ImportRules.date(match[1]);
-   if(!date&&/^\\d{1,2}[/-]\\d{1,2}$/.test(match[1])){
+   if(!date&&/^\d{1,2}[/-]\d{1,2}$/.test(match[1])){
     if(!referenceMonth){unreadable.push({line:item.page,text:line.slice(0,220)});pending.push(line);continue}
     const [day,month]=match[1].split(/[/-]/).map(Number);
     const [year,referenceNumber]=referenceMonth.split('-').map(Number);
