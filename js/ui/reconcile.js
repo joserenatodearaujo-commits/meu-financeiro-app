@@ -74,8 +74,8 @@ function reconcileBindBank(monthly,rows){
   account.value=[...account.options].some(o=>o.value===id)?id:'';
   const saved=previous?.accountId===account.value?previous:null;
   const start=baseline();
-  opening.value=start.ok?reconcileMoney(start.opening).replace(/[^\\d.,-]/g,'').trim():'';
-  closing.value=saved?reconcileMoney(saved.closing).replace(/[^\\d.,-]/g,'').trim():'';
+  opening.value=start.ok?reconcileMoney(start.opening).replace(/[^\d.,-]/g,'').trim():'';
+  closing.value=saved?reconcileMoney(saved.closing).replace(/[^\d.,-]/g,'').trim():'';
   coverage.checked=!!saved?.coverage;
   msg.textContent=start.ok?start.origin+'. Informe o saldo final oficial e confirme cobertura completa.':start.reason;
   $('#reconcileSave').disabled=!start.ok;
