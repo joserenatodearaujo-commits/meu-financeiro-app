@@ -264,7 +264,7 @@ save=async function(){
 const AUTO_GOOGLE_VERIFIER='meufin-google-pkce-verifier-v1';
 const AUTO_GOOGLE_STARTED='meufin-google-pkce-started-v1';
 function autoBase64Url(data){
- return btoa(String.fromCharCode(...data)).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+ return btoa(String.fromCharCode(...data)).replace(/[+]/g,'-').replace(/[/]/g,'_').replace(/=+$/,'');
 }
 function autoOAuthRedirect(){
  // Keep the existing GitHub Pages origin/path so IndexedDB remains unchanged.
