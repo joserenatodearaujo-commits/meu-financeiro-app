@@ -29,11 +29,12 @@ function renderImportReconciliation(){
  const banks=bank.length?'<div class="field"><label for="reconcileBankSource">Conta a conferir</label><select id="reconcileBankSource">'+
   bank.map(x=>'<option value="'+esc(x.source)+'">'+esc(ImportRules.source(x.source)?.label||x.source)+'</option>').join('')+'</select></div>'+
   '<div class="field"><label for="reconcileAccount">Conta bancária cadastrada</label><select id="reconcileAccount">'+accountOptions+'</select></div>'+
-  '<p class="muted">Janeiro usa o saldo oficial de 01/01 da conta; os demais meses usam o saldo final conferido no mês anterior. Edite o saldo em Contas e cartões.</p>'+
+  '<p class="muted">Em janeiro, você pode cadastrar o saldo oficial de 01/01/2026 aqui. Confirme antes de gravar. Os outros meses usam o fechamento conferido do mês anterior.</p>'+
   '<div class="formgrid reconcile-inputs"><div class="field"><label for="reconcileOpening">Saldo de abertura do mês, antes das movimentações (R$)</label>'+
-  '<input type="text" id="reconcileOpening" inputmode="decimal" readonly placeholder="Saldo de janeiro obrigatório"></div>'+
+  '<input type="text" id="reconcileOpening" inputmode="decimal" placeholder="Informe o saldo em 01/01/2026"></div>'+
   '<div class="field"><label for="reconcileClosing">Saldo no último dia do mês (R$)</label>'+
   '<input type="text" id="reconcileClosing" inputmode="decimal" placeholder="0,00" autocomplete="off"></div></div>'+
+  '<div class="actions"><button class="btn" type="button" id="reconcileOpeningSave" hidden>Salvar saldo inicial de janeiro na conta</button></div>'+
   '<label class="reconcile-check"><input id="reconcileCoverage" type="checkbox"> Confirmo que o extrato cobre o mês inteiro e que os saldos informados são oficiais.</label>'+
   '<div class="actions"><button class="btn" type="button" id="reconcileCheck">Conferir diferença</button><button class="btn primary" type="button" id="reconcileSave">Salvar conferência no cofre</button></div>'+
   '<p id="reconcileMessage" class="muted" role="status">A conferência bancária é separada da classificação das despesas. Não altera o saldo do aplicativo.</p>'
@@ -67,6 +68,12 @@ function reconcileBindBank(monthly,rows){
   coverage=$('#reconcileCoverage'),msg=$('#reconcileMessage');
  const current=()=>monthly.find(x=>x.source===source.value);
  const baseline=()=>ReconcileRules.openingForMonth(state,account.value,current()?.month||'');
+ const openingSave=$('#reconcileOpeningSave');
+ const isJanuary=()=>/^[0-9]{4}-01$/.test(current()?.month||'');
+ const officialOpening=()=>{
+  const a=state?.accounts?.find(a=>a.id===account.value&&a.type==='bank');
+  return a&&a.openingDate===current().month+'-01'?Math.round(Number(a.openingBalance)*100):null;
+ };
  const update=()=>{
   const data=current();if(!data)return;
   const previous=(state?.importCheckpoints||[]).find(x=>x.month===data.month&&x.source===data.source);
@@ -74,7 +81,11 @@ function reconcileBindBank(monthly,rows){
   account.value=[...account.options].some(o=>o.value===id)?id:'';
   const saved=previous?.accountId===account.value?previous:null;
   const start=baseline();
+  opening.readOnly=!isJanuary()||!account.value;
   opening.value=start.ok?reconcileMoney(start.opening).replace(/[^\d.,-]/g,'').trim():'';
+  opening.placeholder=account.value?'Saldo de abertura oficial em 01/01/'+data.month.slice(0,4):'Selecione a conta primeiro';
+  openingSave.hidden=!isJanuary()||!account.value;
+  openingSave.disabled=!account.value;
   closing.value=saved?reconcileMoney(saved.closing).replace(/[^\d.,-]/g,'').trim():'';
   coverage.checked=!!saved?.coverage;
   msg.textContent=start.ok?start.origin+'. Informe o saldo final oficial e confirme cobertura completa.':start.reason;
@@ -82,6 +93,13 @@ function reconcileBindBank(monthly,rows){
  };
  const test=()=>{
   const data=current(),start=baseline(),cl=ImportRules.cents(closing.value);
+  if(isJanuary()){
+   const typed=ImportRules.cents(opening.value);
+   if(typed===null||!start.ok||typed!==start.opening){
+    const reason='Salve primeiro o saldo oficial de janeiro na conta antes de conferir o mês.';
+    msg.textContent=reason;return {data,check:{ok:false,reason}};
+   }
+  }
   if(!start.ok){msg.textContent=start.reason;return {data,check:{ok:false,reason:start.reason}}}
   const duplicates=rows.filter(r=>r.source===data.source&&r.date.slice(0,7)===data.month&&r.status==='duplicate').length;
   const check=ReconcileRules.checkBankMonth(data,start.opening,cl,coverage.checked,duplicates);
@@ -90,6 +108,30 @@ function reconcileBindBank(monthly,rows){
  };
  source.onchange=update;
  account.onchange=()=>{reconcileSession.accountBySource[source.value]=account.value;update()};
+ openingSave.onclick=async()=>{
+  if(!isJanuary()||!state||!account.value)return;
+  const acc=state.accounts.find(a=>a.id===account.value&&a.type==='bank');
+  if(!acc){msg.textContent='Escolha a conta bancária correspondente ao extrato.';return}
+  const amount=ImportRules.cents(opening.value);
+  if(amount===null||!Number.isSafeInteger(amount)){
+   msg.textContent='Informe um saldo válido, por exemplo 1.250,50 ou -250,00.';return;
+  }
+  const previous=officialOpening();
+  if(previous===amount){msg.textContent='O saldo oficial de janeiro já está cadastrado com esse valor.';return}
+  if((state.importCheckpoints||[]).some(c=>c.accountId===acc.id&&c.status==='bank-balance-checked')){
+   msg.textContent='Esta conta já possui meses conferidos. Não é seguro alterar o saldo inicial sem revisar os fechamentos existentes.';return;
+  }
+  if(!confirm('Salvar '+reconcileMoney(amount)+' como saldo oficial de abertura da conta '+acc.name+' em 01/01/'+current().month.slice(0,4)+'? Isso altera o ponto de partida do saldo, mas não cria uma receita ou despesa.'))return;
+  const before={openingBalance:acc.openingBalance,openingDate:acc.openingDate};
+  openingSave.disabled=true;
+  acc.openingBalance=amount/100;acc.openingDate=current().month+'-01';
+  try{await save();renderAll();renderImportReconciliation()}
+  catch(err){
+   acc.openingBalance=before.openingBalance;acc.openingDate=before.openingDate;
+   msg.textContent='Não foi possível salvar o saldo inicial: '+(err?.message||'erro');
+   openingSave.disabled=false;
+  }
+ };
  update();
  $('#reconcileCheck').onclick=test;
  $('#reconcileSave').onclick=async()=>{
