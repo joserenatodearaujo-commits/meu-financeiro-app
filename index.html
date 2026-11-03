@@ -56,4 +56,18 @@
 <script src="./js/assistant/voice.js"></script>
 <script src="./js/assistant/receipt.js"></script>
 <script src="./js/assistant/approval.js"></script>
-<script src="./js/core/launch.js"></script><script>if('serviceWorker' in navigator && window.isSecureContext){navigator.serviceWorker.register('./sw.js').catch(()=>{});}</script></body></html>
+<script src="./js/core/launch.js"></script><script>
+if('serviceWorker' in navigator && window.isSecureContext){
+ navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>{
+  // Force a check on launch and whenever the app returns to the foreground.
+  reg.update().catch(()=>{});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)reg.update().catch(()=>{})});
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+   // One safe refresh per tab, without clearing IndexedDB, vault or credentials.
+   const key='meu-financeiro-sw-updated-v2-24';
+   if(sessionStorage.getItem(key)==='1')return;
+   sessionStorage.setItem(key,'1');
+   location.reload();
+  });
+ }).catch(()=>{});
+}</script></body></html>
