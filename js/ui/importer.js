@@ -78,7 +78,8 @@ function importPreviewClassification(row){
  const category=entry&&sub?{macro:entry.name,micro:sub}:null;
  // A duplicate, suspected transfer, cash movement, invoice payment or existing item
  // must remain pending even when a spending category can be suggested.
- const identified=!!category&&row.status==='review';
+ const expenseLike=row.kind==='card'?row.amountCents>0:row.kind==='bank'?row.amountCents<0:false;
+ const identified=!!category&&expenseLike&&row.status==='review';
  return {category,proposed:entry?{macro:entry.name,micro:sub||''}:null,identified,reason:row.status==='review'?(category?'Classificação sugerida, ainda não aprovada.':'Categoria e subcategoria precisam de revisão.'):row.reason};
 }
 function importPreviewSelectOptions(entries,selected,label){
