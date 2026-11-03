@@ -91,3 +91,13 @@ A pedido do usuário, a publicação voltou à interface V2.12, **sem a aba Disp
 - IMPORTANTE: a migração REAL do Android não é executada automaticamente por ChatGPT. É preciso entrar uma vez na conta da nuvem no próprio Android e depois no desktop. Não importar extratos reais antes de verificar que ambos apresentam os mesmos lançamentos e saldos.
 - Segurança: nunca incluir service_role, credenciais pessoais, arquivos bancários ou backups reais no repositório. Somente chave publishable.
 - Testes automáticos: merge 3 vias por UUID, simultaneidade, offline, conflitos, criptografia e interface. O backend mantém funções RPC por usuário e CAS atômico. O CI usa MOCK de servidor em navegadores; o teste operacional com a conta real do usuário deve ser verificado no próprio dispositivo.
+
+
+### V2.16 — Login com Google (fluxo PKCE)
+
+- O botão **Entrar com Google** usa Supabase Auth OAuth, com verificador PKCE armazenado temporariamente somente na sessão do navegador; nenhum Google Client Secret é publicado no GitHub.
+- O retorno é processado antes de acessar a nuvem. Em dispositivo previamente vinculado a outro `user_id`, a sessão diferente é rejeitada e os lançamentos locais não são modificados.
+- **Configuração externa necessária:** criar cliente OAuth tipo **Web application** no Google Auth Platform, incluir como origem JavaScript `https://joserenatodearaujo-commits.github.io` e como URI de redirecionamento Google `https://cvrshlwutczmeyqotqbw.supabase.co/auth/v1/callback`. No Supabase → Authentication → Providers → Google, habilitar o provedor com ID/secret no painel privado. Em Authentication → URL Configuration, permitir `https://joserenatodearaujo-commits.github.io/meu-financeiro-app/` como redirect URL e Site URL, conferindo a URL real publicada. Nunca colocar o segredo no código ou nesta conversa.
+- O Google deve corresponder **ao mesmo e-mail verificado** da conta Supabase existente para possível vinculação automática de identidades. Se gerar outro `user_id`, o app deve preservar a base local e bloquear substituição.
+- O cofre AES-GCM continua exigindo senha/biometria local. **O login Google não migra sozinho dados reais; Android primeiro, e somente depois desktop.**
+- Sem configurar o provedor e a URL no Supabase, o botão não completará o login. Testes simulados e CI não equivalem à validação real do OAuth no dispositivo.
