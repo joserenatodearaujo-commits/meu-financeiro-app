@@ -273,7 +273,7 @@ def test_one(browser,modular,width):
       const wrap=document.querySelector('#sankeyFull .sankey-compact-flow');
       const desktop=document.querySelector('#sankeyFull .sankey-compact-desktop');
       const mobile=document.querySelector('#sankeyFull .sankey-compact-mobile');
-      const visible=innerWidth<=730?mobile:desktop;
+      const visible=getComputedStyle(mobile).display!=='none'?mobile:desktop;
       return {container:wrap.getBoundingClientRect().width,graph:visible.getBoundingClientRect().width,
         scroll:visible.scrollWidth,client:visible.clientWidth,
         visible:getComputedStyle(visible).display!=='none'};
