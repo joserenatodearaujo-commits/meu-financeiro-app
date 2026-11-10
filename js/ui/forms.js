@@ -1,7 +1,90 @@
 'use strict';
 // Meu Financeiro • Entry, account, goal and editing forms.
 function modal(title,content,submit){const approval=title==='Confirmar lançamento';const controls=`<div class="${approval?'modal-actions-top':'modalfoot'}"${approval?' role="group" aria-label="Ações do lançamento"':''}><button class="btn" type="button" id="cancelModal">Cancelar</button><button class="btn primary" type="submit">${approval?'✓ Confirmar e gravar':'Salvar'}</button></div>`;const error='<div id="modalError" role="alert" class="amountneg"></div>';$('#modalRoot').innerHTML=`<div class="modalback"><div class="modal" role="dialog" aria-modal="true"><div class="sectionrow"><h2>${title}</h2><button class="btn small" id="closeModal" aria-label="Fechar janela">✕</button></div><form id="modalForm">${approval?controls+error+content:content+controls+error}</form></div></div>`;$('#closeModal').onclick=$('#cancelModal').onclick=()=>$('#modalRoot').innerHTML='';$('#modalRoot .modalback').onclick=e=>{if(e.target.classList.contains('modalback'))$('#modalRoot').innerHTML=''};$('#modalForm').onsubmit=async e=>{e.preventDefault();const submitButton=$('#modalForm button[type="submit"]');if(submitButton.disabled)return;submitButton.disabled=true;try{const outcome=await submit(new FormData(e.currentTarget));if(outcome===false)return;await save();$('#modalRoot').innerHTML='';renderAll()}catch(err){$('#modalError').textContent=err.message||'Não foi possível salvar'}finally{if(submitButton.isConnected)submitButton.disabled=false}}}
-const field=(name,label,value='',type='text',rest='')=>`<div class="field"><label>${label}</label><input name="${name}" type="${type}" value="${esc(value)}" ${rest}></div>`;const selectField=(name,label,options,value='')=>`<div class="field"><label>${label}</label><select name="${name}">${options.map(([v,l])=>`<option value="${esc(v)}" ${v===value?'selected':''}>${esc(l)}</option>`).join('')}</select></div>`;function entryForm(existing=null,force=''){const v=existing||{},type=force||v.type||'expense',options=[['expense','Despesa'],['income','Receita'],['investment','Investimento'],['transfer','Transferência']];const acs=state.accounts.filter(x=>x.type!=='card').map(x=>[x.id,x.name]);const cards=state.accounts.filter(x=>x.type==='card');const body=`<div class="formgrid">${selectField('type','Tipo',options,type)}${field('description','Descrição',v.description||'','text','required')}${field('amount','Valor (R$)',v.amount||'','number','min="0.01" step="0.01" required')}${field('purchaseDate','Data da compra/operação',v.purchaseDate||selectedMonth+'-01','date','required')}${field('paymentDate','Data do desembolso/recebimento',v.paymentDate||v.purchaseDate||selectedMonth+'-01','date','required')}${selectField('macro','Categoria macro',categoryList().map(c=>[c,c]),v.macro||'Outros')}${subcategoryField(v.macro||'Outros',v.micro||'Diversos')}${selectField('accountId','Conta',acs,v.accountId||'cash-default')}${selectField('cardId','Cartão (se compra no crédito)',[['','Não é cartão'],...cards.map(c=>[c.id,c.name])],v.cardId||'')}${field('installments','Parcelas',v.installments||1,'number','min="1" max="120"')}${field('firstDue','Vencimento da 1ª parcela',v.firstDue||v.paymentDate||selectedMonth+'-01','date')}${selectField('recurring','Recorrência mensal',[['','Não'],['yes','Sim (despesa fixa/receita)']],v.recurring?'yes':'')}${field('recurringEnd','Fim da recorrência (opcional)',v.recurringEnd||'','date')}${field('asset','Código do investimento, se houver',v.asset||'')}${selectField('operation','Operação de investimento',[['aporte','Aporte/compra'],['resgate','Resgate/venda']],v.operation||'aporte')}</div><p class="muted">Cartão: o valor informado é total da compra. As parcelas serão distribuídas igualmente. Recorrência mensal não pode ser combinada com cartão.</p>`;modal(existing?'Editar lançamento':'Novo lançamento',body,async f=>{const x=Object.fromEntries(f.entries());x.amount=Number(x.amount);x.installments=Number(x.installments)||1;x.recurring=x.recurring==='yes';if(!Number.isFinite(x.amount)||x.amount<=0)throw Error('O valor deve ser positivo');if(x.type==='transfer')throw Error('Use o botão Transferir entre contas para movimentações internas.');if(!x.cardId&&!state.accounts.some(a=>a.id===x.accountId&&a.type!=='card'))throw Error('Selecione uma conta de origem válida.');x.paymentMethod=x.cardId?'credit':state.accounts.find(a=>a.id===x.accountId)?.type==='cash'?'cash':'pix';if(x.cardId&&x.type!=='expense')throw Error('Cartão só pode ser usado em despesas');if(x.cardId&&x.recurring)throw Error('Escolha cartão parcelado ou recorrência mensal, não os dois');if(x.type==='investment'&&x.cardId)throw Error('Investimento não aceita cartão');if(x.type==='investment'||x.type==='income'||x.type==='transfer')x.cardId='';if(x.type==='investment')x.macro='Investimentos';if(x.type==='transfer')x.macro='Transferências';if(x.cardId){x.recurring=false;x.firstDue=x.firstDue||x.paymentDate;x.dueDay=+x.firstDue.slice(-2)}if(existing&&existing.cardId&&installments(existing).some(p=>(state.invoicePayments||[]).some(pay=>pay.cardId===existing.cardId&&pay.month===monthKey(p.due))))throw Error('Existem pagamentos vinculados a esta compra. Exclua primeiro esses pagamentos na fatura para alterar a compra.');const chosen=chosenSubcategory(f,String(f.get('macro')));x.micro=chosen.micro;state.taxonomy=chosen.catalog;if(existing){state.transactions=state.transactions.map(t=>t.id===existing.id?{...x,id:existing.id}:t)}else state.transactions.push({...x,id:uid()})});connectSubcategory($('#modalForm'),v.macro||'Outros',v.micro||'Diversos')}function accountForm(existingId=''){
+const field=(name,label,value='',type='text',rest='')=>`<div class="field"><label>${label}</label><input name="${name}" type="${type}" value="${esc(value)}" ${rest}></div>`;const selectField=(name,label,options,value='')=>`<div class="field"><label>${label}</label><select name="${name}">${options.map(([v,l])=>`<option value="${esc(v)}" ${v===value?'selected':''}>${esc(l)}</option>`).join('')}</select></div>`;function entryToday(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function entryForm(existing=null,force=''){
+ const old=existing||{},investment=force==='investment'||(!force&&old.type==='investment'),type=investment?'investment':force||old.type||'expense';
+ const today=entryToday(),purchase=old.purchaseDate||today;
+ const cards=state.accounts.filter(a=>a.type==='card'),accounts=state.accounts.filter(a=>a.type==='bank'||a.type==='cash');
+ const method=investment?(old.paymentMethod==='cash'?'cash':'pix'):(old.cardId?'credit':old.paymentMethod==='cash'?'cash':old.accountId&&state.accounts.find(a=>a.id===old.accountId)?.type==='cash'?'cash':'pix');
+ const card=cards.find(a=>a.id===old.cardId)||cards[0];
+ const due=card?firstDueForCard(purchase,card):purchase;
+ const methodChoices=investment?[['pix','Conta corrente / Pix'],['cash','Dinheiro / carteira']]:[['pix','Conta corrente / Pix'],['cash','Dinheiro / carteira'],['credit','Cartão de crédito']];
+ const body='<div class="entry-payment-first">'+selectField('paymentMethod','Como foi '+(type==='income'?'recebido':'pago')+'?',methodChoices,method)+'</div>'+
+ '<div class="formgrid">'+
+ (investment?'<input type="hidden" name="type" value="investment">':selectField('type','Tipo de lançamento',[['expense','Despesa'],['income','Receita']],type))+
+ field('description','Descrição',old.description||'','text','required maxlength="200"')+
+ field('amount','Valor (R$)',old.amount??'','number','min="0.01" step="0.01" required')+
+ field('purchaseDate',investment?'Data da operação':'Data da compra / operação',purchase,'date','required')+
+ '<div class="entry-account">'+selectField('accountId','Conta / carteira',accounts.filter(a=>a.type===(method==='cash'?'cash':'bank')).map(a=>[a.id,a.name]),old.accountId||'')+'</div>'+
+ '<div class="entry-credit">'+selectField('cardId','Cartão de crédito',cards.map(a=>[a.id,a.name]),old.cardId||card?.id||'')+'</div>'+
+ '<div class="entry-credit">'+field('paymentDate','Desembolso previsto na fatura',due,'date','readonly')+'</div>'+
+ '<div class="entry-credit">'+field('installments','Quantidade de parcelas',old.installments||1,'number','min="1" max="120" required')+'</div>'+
+ (investment?field('asset','Código do investimento',old.asset||'','text','maxlength="60"')+
+ selectField('operation','Operação',[['aporte','Aporte / compra'],['resgate','Resgate / venda']],old.operation||'aporte'):
+ '<div class="entry-category">'+selectField('macro','Categoria',categoryList().map(c=>[c,c]),old.macro||'Outros')+subcategoryField(old.macro||'Outros',old.micro||'Diversos')+'</div>'+
+ '<div class="entry-recurring">'+selectField('recurring','Recorrência mensal',[['','Não'],['yes','Sim']],old.recurring?'yes':'')+'</div>'+
+ '<div class="entry-recurring">'+field('recurringEnd','Fim da recorrência (opcional)',old.recurringEnd||'','date')+'</div>')+
+ '</div><p class="muted">A data inicial é hoje e pode ser corrigida. Conta/Pix ou carteira: desembolso na data da operação. Cartão: a data prevista é calculada por fechamento e vencimento, sem registrar pagamento de fatura automaticamente.</p>';
+ modal(existing?'Editar lançamento':investment?'Registrar investimento':'Novo lançamento tradicional',body,async f=>{
+  const x=Object.fromEntries(f.entries()),pay=x.paymentMethod;
+  const form=$('#modalForm');
+  x.type=investment?'investment':x.type;
+  x.description=String(x.description||'').trim();
+  x.amount=Number(x.amount);x.installments=pay==='credit'?Number(x.installments)||1:1;
+  x.recurring=pay!=='credit'&&x.recurring==='yes';x.recurringEnd=x.recurring?x.recurringEnd||'':'';
+  if(!x.description||!Number.isFinite(x.amount)||x.amount<=0)throw Error('Informe descrição e valor positivo.');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(x.purchaseDate)||!Number.isFinite(new Date(x.purchaseDate+'T12:00:00').getTime()))throw Error('Informe uma data de compra válida.');
+  if(!['expense','income','investment'].includes(x.type))throw Error('Tipo de lançamento inválido.');
+  if(!investment&&x.type==='income'&&pay==='credit')throw Error('Recebimentos não podem ser lançados em cartão de crédito.');
+  if(pay==='credit'){
+   const chosen=cards.find(a=>a.id===x.cardId);
+   if(!chosen)throw Error('Cadastre e selecione um cartão de crédito.');
+   if(!Number.isInteger(x.installments)||x.installments<1||x.installments>120)throw Error('Parcelas devem estar entre 1 e 120.');
+   x.paymentDate=firstDueForCard(x.purchaseDate,chosen);
+   x.firstDue=x.paymentDate;x.dueDay=Number(x.firstDue.slice(-2));
+   x.accountId='';x.recurring=false;x.recurringEnd='';
+  }else{
+   const chosen=state.accounts.find(a=>a.id===x.accountId&&a.type===(pay==='cash'?'cash':'bank'));
+   if(!chosen)throw Error(pay==='cash'?'Selecione uma carteira cadastrada.':'Selecione uma conta corrente / Pix cadastrada.');
+   x.cardId='';x.installments=1;x.firstDue='';x.dueDay=Number(x.purchaseDate.slice(-2));
+   x.paymentDate=x.purchaseDate;
+  }
+  x.paymentMethod=pay;
+  if(x.type==='investment'){x.macro='Investimentos';x.micro='Diversos';x.asset=String(x.asset||'').trim()||x.description;x.operation=x.operation==='resgate'?'resgate':'aporte';x.recurring=false;}
+  else{
+   const chosen=chosenSubcategory(new FormData(form),String(f.get('macro')||'Outros'));
+   x.micro=chosen.micro;x.macro=String(f.get('macro'));state.taxonomy=chosen.catalog;
+   x.asset='';x.operation='aporte';
+  }
+  if(existing?.cardId&&installments(existing).some(p=>(state.invoicePayments||[]).some(pay=>pay.cardId===existing.cardId&&pay.month===monthKey(p.due))))throw Error('Há pagamentos vinculados a esta compra. Exclua-os antes de alterar a compra.');
+  if(existing)state.transactions=state.transactions.map(t=>t.id===existing.id?{...x,id:existing.id}:t);
+  else state.transactions.push({...x,id:uid()});
+ });
+ const form=$('#modalForm'),payment=form.querySelector('[name="paymentMethod"]'),account=form.querySelector('[name="accountId"]'),cardSelect=form.querySelector('[name="cardId"]'),date=form.querySelector('[name="purchaseDate"]'),dueInput=form.querySelector('[name="paymentDate"]'),typeSelect=form.querySelector('[name="type"]');
+ const update=()=>{
+  const credit=!investment&&payment.value==='credit',cash=payment.value==='cash';
+  const currentType=investment?'investment':typeSelect?.value;
+  if(credit&&currentType==='income'){payment.value='pix';return update();}
+  form.querySelectorAll('.entry-account').forEach(el=>{el.hidden=credit;el.querySelectorAll('select').forEach(x=>x.disabled=credit)});
+  form.querySelectorAll('.entry-credit').forEach(el=>{el.hidden=!credit;el.querySelectorAll('input,select').forEach(x=>x.disabled=!credit)});
+  form.querySelectorAll('.entry-recurring').forEach(el=>{el.hidden=credit;el.querySelectorAll('input,select').forEach(x=>x.disabled=credit)});
+  if(!credit){
+   const previous=account.value;
+   account.innerHTML=state.accounts.filter(a=>a.type===(cash?'cash':'bank')).map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>').join('');
+   if([...account.options].some(o=>o.value===previous))account.value=previous;
+   else if(old.accountId&&[...account.options].some(o=>o.value===old.accountId))account.value=old.accountId;
+  }else{
+   const selected=state.accounts.find(a=>a.id===cardSelect.value&&a.type==='card');
+   if(selected)dueInput.value=firstDueForCard(date.value,selected);
+  }
+ };
+ payment.onchange=update;cardSelect.onchange=update;date.onchange=update;
+ if(typeSelect)typeSelect.onchange=update;
+ update();
+ if(!investment)connectSubcategory(form,old.macro||'Outros',old.micro||'Diversos');
+}
+function accountForm(existingId=''){
  const original=state.accounts.find(a=>a.id===existingId),editing=!!original;
  const typ=original?.type||'bank';
  const opts=[['bank','Conta bancária / Pix'],['cash','Carteira / Dinheiro em espécie'],['card','Cartão de crédito']];
