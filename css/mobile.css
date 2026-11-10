@@ -349,3 +349,52 @@ body.sankey-is-expanded{overflow:hidden}
  .forecast-card-line{font-size:10px}
  .forecast-total-line strong{font-size:15px}
 }
+
+
+/* V2.28 Responsive compact Sankey: no nested vertical or horizontal scroll. */
+.sankey-ui.sankey-compact{min-width:0;width:100%;max-width:100%;overflow:visible}
+.sankey-compact .sankey-compact-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,235px);gap:12px;min-width:0;align-items:start}
+.sankey-compact .sankey-compact-flow{min-width:0;overflow:visible}
+.sankey-compact .sankey-compact-desktop{width:100%;max-width:100%;min-width:0;overflow:visible;background:#fbfcff;border:1px solid #e1e9f2;border-radius:12px;padding:7px}
+.sankey-compact .sankey-compact-desktop svg{display:block;width:100%;min-width:0;max-width:100%;height:auto;overflow:visible}
+.sankey-compact .sankey-compact-side{display:grid;gap:10px;min-width:0}
+.sankey-compact .sankey-compact-side>div{border:1px solid #dfe7ef;background:#fff;border-radius:11px;padding:12px;min-width:0}
+.sankey-compact .sankey-compact-side h3{font-size:14px;margin:0 0 9px;color:#26384b}
+.sankey-compact .sankey-compact-side p{display:flex;justify-content:space-between;gap:8px;font-size:12px;margin:8px 0;flex-wrap:wrap}
+.sankey-compact .sankey-compact-side p strong{white-space:nowrap}
+.sankey-compact .sankey-compact-mobile{display:none}
+.sankey-compact .sankey-selected-detail{margin:12px 0;border:1px solid #d4e4ef;border-radius:10px;padding:12px;background:#f8fbff}
+.sankey-compact .sankey-detail-line{display:flex;justify-content:space-between;gap:9px;font-size:12px;border-bottom:1px solid #e7edf4;padding:7px 0}
+.sankey-compact .sankey-detail-line span{overflow-wrap:anywhere;min-width:0}
+.sankey-compact .sankey-detail-line b{white-space:nowrap}
+.sankey-compact .sankey-hint{font-size:11px;margin:8px 0 10px}
+.sankey-compact .sankey-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.sankey-compact [data-sankey-pick]{cursor:pointer}
+@media(max-width:1220px){
+ .sankey-compact .sankey-compact-layout{grid-template-columns:1fr}
+ .sankey-compact .sankey-compact-side{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:730px){
+ .sankey-compact .sankey-compact-desktop{display:none}
+ .sankey-compact .sankey-compact-mobile{display:block;min-width:0;max-width:100%;padding:10px 8px;background:#f9fbff;border:1px solid #dfe7ee;border-radius:12px}
+ .sankey-compact .sankey-mobile-sources,.sankey-compact .sankey-mobile-destinations{min-width:0}
+ .sankey-compact .sankey-mobile-sources>strong,.sankey-compact .sankey-mobile-destinations>strong{display:block;color:#334155;font-size:12px;margin-bottom:8px}
+ .sankey-compact .sankey-mobile-sources>div,.sankey-compact .sankey-mobile-destinations>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .sankey-compact .sankey-mobile-sources>div>div,.sankey-compact .sankey-mobile-destination{min-width:0;background:#eaf8ef;border:1px solid #c9e9d5;border-radius:9px;padding:9px 8px;display:flex;flex-direction:column;gap:3px;text-align:left;font-size:11px;color:#274138;overflow-wrap:anywhere}
+ .sankey-compact .sankey-mobile-sources b,.sankey-compact .sankey-mobile-destination b{font-size:13px;color:#21344a}
+ .sankey-compact .sankey-mobile-middle{display:grid;justify-items:center;gap:3px;margin:3px 0}
+ .sankey-compact .sankey-mobile-middle>span{color:#2d81cd;font-size:17px;font-weight:800;line-height:1}
+ .sankey-compact .sankey-mobile-middle>div{background:#dcecff;border:1px solid #a2c9f1;color:#215481;border-radius:9px;padding:8px 14px;display:flex;flex-direction:column;gap:1px;text-align:center;font-size:12px}
+ .sankey-compact .sankey-mobile-middle strong{font-size:16px}
+ .sankey-compact .sankey-mobile-destination{background:#fff7f4;border-color:#f1dfd8;border-left:4px solid var(--accent);width:100%;font:inherit;font-size:11px}
+ .sankey-compact .sankey-mobile-destination:disabled{opacity:1;cursor:default}
+ .sankey-compact .sankey-compact-side{grid-template-columns:1fr;gap:7px}
+ .sankey-compact .sankey-compact-side>div{padding:10px}
+ .sankey-compact .sankey-tabs{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+ .sankey-compact .sankey-tab{font-size:11px;min-width:0;padding:8px 3px}
+}
+@media(max-width:370px){
+ .sankey-compact .sankey-mobile-sources>div,.sankey-compact .sankey-mobile-destinations>div{gap:4px}
+ .sankey-compact .sankey-mobile-sources>div>div,.sankey-compact .sankey-mobile-destination{padding:7px 5px}
+ .sankey-compact .sankey-mobile-sources b,.sankey-compact .sankey-mobile-destination b{font-size:12px}
+}
