@@ -116,7 +116,11 @@ def test_one(browser,modular,width):
     assert p.locator('details.taxonomy-group[data-tax-group="Pets"]').evaluate('(el)=>el.open'), 'Estado expandido deve sobreviver à navegação'
     # Formulário tradicional: as opções dependem da categoria.
     p.locator('#newEntry').click()
+    assert p.locator('#agentInvestment').is_visible()
     p.locator('#agentTraditional').click()
+    assert p.locator('#modalForm select').first.get_attribute('name')=='paymentMethod'
+    assert p.locator('#modalForm input[name="purchaseDate"]').input_value()==p.evaluate('agentDate()')
+    assert not p.locator('#modalForm input[name="paymentDate"]').is_visible()
     p.locator('#modalForm select[name="macro"]').select_option('Pets')
     assert 'Ração' in p.locator('#modalForm select[name="micro"]').inner_text()
     p.locator('#modalForm [data-inline-sub]').click()
@@ -170,6 +174,16 @@ def test_one(browser,modular,width):
     assert p.locator('details.account-group[data-account-group="card"]').evaluate('(el)=>el.open'), 'Novo cartão deve expandir seu grupo'
     p.locator('details.account-group[data-account-group="card"] > summary').click()
     assert not p.locator('details.account-group[data-account-group="card"]').evaluate('(el)=>el.open')
+    # New traditional card: payment first and automatic credit invoice date.
+    p.locator('#newEntry').click()
+    p.locator('#agentTraditional').click()
+    p.locator('#modalForm select[name="paymentMethod"]').select_option('credit')
+    assert p.locator('#modalForm input[name="paymentDate"]').is_visible()
+    due=p.evaluate("firstDueForCard(agentDate(),state.accounts.find(a=>a.type==='card'))")
+    assert p.locator('#modalForm input[name="paymentDate"]').input_value()==due
+    p.locator('#modalForm select[name="paymentMethod"]').select_option('pix')
+    assert not p.locator('#modalForm input[name="paymentDate"]').is_visible()
+    p.locator('#cancelModal').click()
     # Basic voice-like interpreted text. No actual speech in test.
     p.locator('#newEntry').click()
     p.locator('#agentText').fill('Gastei quinze reais e cinquenta centavos de combustível no Pix hoje')
@@ -181,6 +195,15 @@ def test_one(browser,modular,width):
     p.locator('#modalForm button[type="submit"]').click()
     p.wait_for_timeout(80)
     assert len(p.evaluate('state.transactions'))==1
+    p.locator('[data-page="movimentos"]').click()
+    p.locator('#filterDay').fill(p.evaluate('agentDate()'))
+    p.locator('#filterDay').dispatch_event('change')
+    assert p.locator('#transactionsTable').get_by_text('Combustível',exact=False).count()>=1
+    p.locator('#filterDay').fill('2025-01-01')
+    p.locator('#filterDay').dispatch_event('change')
+    assert p.locator('#transactionsTable').get_by_text('Nenhum registro').count()>=1
+    p.locator('#clearFilterDay').click()
+    assert p.locator('#filterDay').input_value()==''
     # cancel must not write
     p.locator('#newEntry').click()
     p.locator('#agentText').fill('Paguei cinquenta reais no supermercado no Pix')
