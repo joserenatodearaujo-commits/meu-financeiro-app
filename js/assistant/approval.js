@@ -59,7 +59,7 @@ function openApproval(a){stopVoice();cleanAgentImage();
   const method=paymentSelect.value,credit=method==='credit',type=method==='cash'?'cash':'bank';
   $('#agentAccountField').hidden=credit;
   accountSelect.disabled=credit;
-  $('#modalForm .entry-credit').forEach(el=>{el.hidden=!credit;el.querySelectorAll('input,select').forEach(input=>input.disabled=!credit)});
+  document.querySelectorAll('#modalForm .entry-credit').forEach(el=>{el.hidden=!credit;el.querySelectorAll('input,select').forEach(input=>input.disabled=!credit)});
   const keep=accountSelect.value;
   accountSelect.innerHTML=state.accounts.filter(a=>a.type===type).map(a=>'<option value="'+esc(a.id)+'">'+esc(a.name)+'</option>').join('');
   if([...accountSelect.options].some(o=>o.value===keep))accountSelect.value=keep;
