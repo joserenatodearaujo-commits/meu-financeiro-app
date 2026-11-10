@@ -370,7 +370,7 @@ body.sankey-is-expanded{overflow:hidden}
 .sankey-compact .sankey-hint{font-size:11px;margin:8px 0 10px}
 .sankey-compact .sankey-tabs{display:flex;flex-wrap:wrap;gap:6px}
 .sankey-compact [data-sankey-pick]{cursor:pointer}
-@media(max-width:1220px){
+@container (max-width:1080px){
  .sankey-compact .sankey-compact-layout{grid-template-columns:1fr}
  .sankey-compact .sankey-compact-side{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
