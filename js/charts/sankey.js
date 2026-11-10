@@ -151,13 +151,13 @@ function compactSankey(m,basis='cash',depth='macro'){
  const originTop=origins.slice(0,2);
  if(origins.length>2)originTop.push({name:'Outras receitas',value:origins.slice(2).reduce((n,x)=>n+x.value,0)});
  if(!originTop.length)originTop.push({name:'Sem receitas',value:0});
- const grouped=sankeyShowAll?all:all.slice(0,4);
+ const grouped=all.slice(0,4);
  const displayed=grouped.slice();
- if(!sankeyShowAll&&all.length>4)displayed.push({name:'Outras categorias',value:all.slice(4).reduce((n,x)=>n+x.value,0),children:all.slice(4).flatMap(x=>x.children),grouped:true});
+ if(all.length>4)displayed.push({name:'Outras categorias',value:all.slice(4).reduce((n,x)=>n+x.value,0),children:all.slice(4).flatMap(x=>x.children),grouped:true});
  if(model.investments>0)displayed.push({name:'Investimentos',value:model.investments,type:'investment'});
  if(model.balance>0)displayed.push({name:'Saldo do período',value:model.balance,type:'balance'});
  if(!displayed.length)displayed.push({name:'Sem saídas',value:0,type:'balance'});
- const selected=grouped.find(x=>x.name===sankeyChosen);
+ const selected=displayed.find(x=>x.name===sankeyChosen)||all.find(x=>x.name===sankeyChosen);
  const colors=['#e34d51','#f38c2f','#eaba2d','#f4b957','#d68c4a'];
  const nameShort=(v,max=18)=>String(v).length>max?String(v).slice(0,max-1)+'…':String(v);
  const nodeColor=(r,i)=>r.type==='investment'?'#3289db':r.type==='balance'?'#7896bb':colors[Math.min(i,4)];
@@ -207,12 +207,22 @@ function compactSankey(m,basis='cash',depth='macro'){
   '<p>Investimentos <strong>'+fmt(model.investments/100)+'</strong></p>'+
   '<p>Saldo do período <strong>'+fmt(model.balance/100)+'</strong></p></div>'+
   '<div><h3>Maior saída</h3><p>'+(all.length?esc(all[0].name)+' <strong>'+fmt(all[0].value/100)+'</strong>':'Nenhuma despesa no período')+'</p></div></aside>';
+ const allDetails=sankeyShowAll&&all.length>4?'<div class="sankey-selected-detail"><strong>Todas as categorias</strong>'+all.map((x,i)=>'<button type="button" class="sankey-detail-line sankey-all-category" data-sankey-category="'+i+'"><span>'+esc(x.name)+'</span><b>'+fmt(x.value/100)+'</b></button>').join('')+'</div>':'';
  const warn=model.balance<0?'<p class="sankey-hint">As saídas superam as receitas. A diferença pode ser coberta por saldo anterior; saldo inicial não é tratado como receita.</p>':'';
  return '<div class="sankey-ui sankey-compact"><div class="sankey-toolbar"><div class="sankey-tabs" role="group" aria-label="Agrupar o fluxo">'+tabs+'</div></div>'+
   '<div class="sankey-compact-layout"><div class="sankey-compact-flow">'+desktop+mobile+
   '<p class="sankey-hint">Visão condensada. O fluxo central é uma representação do período, não uma conta bancária. Toque em um destino para ver detalhes.</p>'+
   (all.length>4?'<button class="btn small" type="button" data-sankey-more>'+(sankeyShowAll?'Mostrar principais':'Mostrar todas as '+all.length+' categorias')+'</button>':'')+
-  selectedDetails+warn+'</div>'+side+'</div></div>';
+  allDetails+selectedDetails+warn+'</div>'+side+'</div></div>';
 }
 sankey=function(m,basis,depth){return compactSankey(m,basis,depth)};
-document.addEventListener('click',e=>{if(e.target.closest('[data-sankey-clear]')){sankeyChosen='';renderAll()}});
+document.addEventListener('click',e=>{
+ if(e.target.closest('[data-sankey-clear]')){sankeyChosen='';renderAll();return}
+ const item=e.target.closest('[data-sankey-category]');
+ if(item){
+  const root=item.closest('.sankey-ui'),months=viewedMonths();
+  const basis=root.closest('#sankeyFull')?document.querySelector('#flowBasis').value:'cash';
+  const g=sankeyGroups(months,basis,sankeyView).groups[Number(item.dataset.sankeyCategory)];
+  if(g){sankeyChosen=g.name;renderAll()}
+ }
+});
