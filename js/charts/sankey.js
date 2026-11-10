@@ -125,7 +125,7 @@ document.addEventListener('click',e=>{
  const tab=e.target.closest('[data-sankey-view]');
  if(tab){sankeyView=tab.dataset.sankeyView;sankeyChosen='';sankeyShowAll=false;renderAll();return}
  const chip=e.target.closest('[data-sankey-pick]');
- if(chip){const root=chip.closest('.sankey-ui');const months=viewedMonths();const basis=root.closest('#sankeyFull')?document.querySelector('#flowBasis').value:'cash';const groups=sankeyGroups(months,basis,sankeyView).groups;let shown=groups.slice(0,4);if(groups.length>4)shown=shown.concat([{name:'Outras categorias'}]);const current=shown[Number(chip.dataset.sankeyPick)];if(current){sankeyChosen=sankeyChosen===current.name?'':current.name;renderAll()}return}
+ if(chip){const root=chip.closest('.sankey-ui');const months=viewedMonths();const basis=root.closest('#sankeyFull')?document.querySelector('#flowBasis').value:'cash';const groups=sankeyGroups(months,basis,sankeyView).groups;let shown=sankeyShowAll?groups:groups.slice(0,5);if(!sankeyShowAll&&groups.length>5)shown=shown.concat([{name:'Outras categorias'}]);const current=shown[Number(chip.dataset.sankeyPick)];if(current){sankeyChosen=sankeyChosen===current.name?'':current.name;renderAll()}return}
  const more=e.target.closest('[data-sankey-more]');
  if(more){sankeyShowAll=!sankeyShowAll;sankeyChosen='';renderAll();return}
  const expand=e.target.closest('[data-sankey-expand]');
@@ -135,94 +135,4 @@ document.addEventListener('keydown',e=>{
  if(e.key!=='Enter'&&e.key!==' ')return;
  const el=e.target.closest('[data-sankey-pick]');
  if(el&&el.tagName.toLowerCase()!=='button'){e.preventDefault();el.dispatchEvent(new MouseEvent('click',{bubbles:true}))}
-});
-
-
-// V2.28 — Compact responsive 3-stage flow. No fixed-width SVG or nested scrolling.
-// The center represents period cash flow, not a fictitious bank account.
-function compactSankey(m,basis='cash',depth='macro'){
- const months=Array.isArray(m)?m:[m],model=sankeyGroups(months,basis,sankeyView),all=model.groups;
- const incomeGroups=new Map();
- months.forEach(month=>txIncome(month).forEach(t=>{
-  const label=t.macro||'Outras receitas';
-  incomeGroups.set(label,(incomeGroups.get(label)||0)+sankeyCents(t.amount));
- }));
- const origins=Array.from(incomeGroups,([name,value])=>({name,value})).filter(x=>x.value>0).sort((a,b)=>b.value-a.value);
- const originTop=origins.slice(0,2);
- if(origins.length>2)originTop.push({name:'Outras receitas',value:origins.slice(2).reduce((n,x)=>n+x.value,0)});
- if(!originTop.length)originTop.push({name:'Sem receitas',value:0});
- const grouped=all.slice(0,4);
- const displayed=grouped.slice();
- if(all.length>4)displayed.push({name:'Outras categorias',value:all.slice(4).reduce((n,x)=>n+x.value,0),children:all.slice(4).flatMap(x=>x.children),grouped:true});
- if(model.investments>0)displayed.push({name:'Investimentos',value:model.investments,type:'investment'});
- if(model.balance>0)displayed.push({name:'Saldo do período',value:model.balance,type:'balance'});
- if(!displayed.length)displayed.push({name:'Sem saídas',value:0,type:'balance'});
- const selected=displayed.find(x=>x.name===sankeyChosen)||all.find(x=>x.name===sankeyChosen);
- const colors=['#e34d51','#f38c2f','#eaba2d','#f4b957','#d68c4a'];
- const nameShort=(v,max=18)=>String(v).length>max?String(v).slice(0,max-1)+'…':String(v);
- const nodeColor=(r,i)=>r.type==='investment'?'#3289db':r.type==='balance'?'#7896bb':colors[Math.min(i,4)];
- const svgH=Math.max(345,Math.min(425,displayed.length*55+45)),centerY=svgH/2-58;
- const originH=svgH/originTop.length;
- let paths='',nodes='',labels='';
- const incomeDenom=Math.max(1,model.income),outDenom=Math.max(1,model.spending+Math.max(0,model.investments)+Math.max(0,model.balance));
- const ribbons=(x1,y1,x2,y2,h,color)=>sankeyPath(x1,y1-h/2,x2,y2-h/2,h,color,'.35');
- originTop.forEach((o,i)=>{
-  const y=(i+.5)*originH,h=Math.max(5,Math.min(36,o.value/incomeDenom*48));
-  paths+=ribbons(196,y,405,svgH/2,h,'#24a569');
-  nodes+='<rect x="8" y="'+(y-32)+'" width="188" height="64" rx="13" fill="#e3f5e9" stroke="#bfe9ce"/>';
-  labels+='<text x="20" y="'+(y-8)+'" font-size="14" font-weight="700" fill="#184f34">'+esc(nameShort(o.name,23))+'</text>'+
-    '<text x="20" y="'+(y+16)+'" font-size="15" font-weight="700" fill="#154f32">'+esc(fmt(o.value/100))+'</text>';
- });
- displayed.forEach((d,i)=>{
-  const y=(i+.5)*(svgH/displayed.length),h=Math.max(4,Math.min(36,d.value/outDenom*85)),color=nodeColor(d,i);
-  paths+=ribbons(549,svgH/2,728,y,h,color);
-  const isPicked=selected?.name===d.name,clickable=!d.type;
-  nodes+='<rect x="728" y="'+(y-22)+'" width="208" height="44" rx="10" fill="'+(d.type==='investment'?'#e5f1fe':d.type==='balance'?'#eef2fb':'#fff4f2')+'" stroke="'+(isPicked?'#15803d':'#dce5eb')+'" stroke-width="'+(isPicked?3:1)+'"/>';
-  labels+='<text x="741" y="'+(y-4)+'" font-size="13" font-weight="650" fill="#26364a">'+esc(nameShort(d.name,22))+'</text>'+
-   '<text x="741" y="'+(y+13)+'" font-size="13" font-weight="700" fill="'+color+'">'+esc(fmt(d.value/100))+'</text>';
-  if(clickable){
-   const idx=displayed.findIndex(x=>x.name===d.name);
-   labels+='<rect data-sankey-pick="'+idx+'" x="728" y="'+(y-22)+'" width="208" height="44" rx="10" fill="transparent" tabindex="0" role="button" aria-label="Detalhar '+esc(d.name)+'"><title>Ver '+esc(d.name)+'</title></rect>';
-  }
- });
- const desktop='<div class="sankey-compact-desktop"><svg viewBox="0 0 944 '+svgH+'" role="img" aria-label="Fluxo financeiro compacto, origem, fluxo do período e destinos" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">'+
-  '<text x="8" y="18" font-size="14" font-weight="750" fill="#344459">Origem</text><text x="418" y="18" font-size="14" font-weight="750" fill="#344459">Fluxo</text><text x="728" y="18" font-size="14" font-weight="750" fill="#344459">Destino</text>'+
-  paths+'<rect x="405" y="'+centerY+'" width="144" height="116" rx="14" fill="#cae3ff" stroke="#80b8f9"/>'+
-  '<text x="477" y="'+(centerY+30)+'" text-anchor="middle" font-size="15" font-weight="700" fill="#225587">Fluxo do</text>'+
-  '<text x="477" y="'+(centerY+49)+'" text-anchor="middle" font-size="15" font-weight="700" fill="#225587">período</text>'+
-  '<text x="477" y="'+(centerY+76)+'" text-anchor="middle" font-size="15" font-weight="800" fill="#1d4f80">'+esc(fmt(model.income/100))+'</text>'+
-  '<text x="477" y="'+(centerY+96)+'" text-anchor="middle" font-size="11" fill="#305b87">Receitas totais</text>'+
-  nodes+labels+'</svg></div>';
- const mobile='<div class="sankey-compact-mobile" aria-label="Fluxo de origem, período e destinos sem rolagem horizontal">'+
-  '<div class="sankey-mobile-sources"><strong>Origem</strong><div>'+originTop.map(x=>'<div><span>'+esc(nameShort(x.name,19))+'</span><b>'+fmt(x.value/100)+'</b></div>').join('')+'</div></div>'+
-  '<div class="sankey-mobile-middle"><span aria-hidden="true">↓</span><div>Fluxo do período <strong>'+fmt(model.income/100)+'</strong></div><span aria-hidden="true">↓</span></div>'+
-  '<div class="sankey-mobile-destinations"><strong>Destino</strong><div>'+displayed.map((x,i)=>'<button type="button" '+(x.type?'disabled':'data-sankey-pick="'+i+'"')+' class="sankey-mobile-destination" style="--accent:'+nodeColor(x,i)+'"><span>'+esc(nameShort(x.name,28))+'</span><b>'+fmt(x.value/100)+'</b></button>').join('')+'</div></div></div>';
- const selectedDetails=selected?'<div class="sankey-selected-detail"><div class="sectionrow"><strong>'+esc(selected.name)+' — detalhamento</strong><button type="button" class="btn small" data-sankey-clear>Fechar</button></div>'+
-  selected.children.slice(0,12).map(x=>'<div class="sankey-detail-line"><span>'+esc(x.name)+'</span><b>'+fmt(x.value/100)+'</b></div>').join('')+
-  (selected.children.length>12?'<small>Exibindo as 12 maiores subcategorias.</small>':'')+'</div>':'';
- const tabs=[['category','Por categoria'],['account','Por conta'],['card','Por cartão']].map(([id,name])=>'<button class="sankey-tab'+(sankeyView===id?' active':'')+'" type="button" data-sankey-view="'+id+'" aria-pressed="'+(sankeyView===id)+'">'+name+'</button>').join('');
- const side='<aside class="sankey-compact-side"><div><h3>Resumo do período</h3>'+
-  '<p>Receitas <strong class="amountpos">'+fmt(model.income/100)+'</strong></p>'+
-  '<p>Despesas <strong class="amountneg">'+fmt(model.spending/100)+'</strong></p>'+
-  '<p>Investimentos <strong>'+fmt(model.investments/100)+'</strong></p>'+
-  '<p>Saldo do período <strong>'+fmt(model.balance/100)+'</strong></p></div>'+
-  '<div><h3>Maior saída</h3><p>'+(all.length?esc(all[0].name)+' <strong>'+fmt(all[0].value/100)+'</strong>':'Nenhuma despesa no período')+'</p></div></aside>';
- const allDetails=sankeyShowAll&&all.length>4?'<div class="sankey-selected-detail"><strong>Todas as categorias</strong>'+all.map((x,i)=>'<button type="button" class="sankey-detail-line sankey-all-category" data-sankey-category="'+i+'"><span>'+esc(x.name)+'</span><b>'+fmt(x.value/100)+'</b></button>').join('')+'</div>':'';
- const warn=model.balance<0?'<p class="sankey-hint">As saídas superam as receitas. A diferença pode ser coberta por saldo anterior; saldo inicial não é tratado como receita.</p>':'';
- return '<div class="sankey-ui sankey-compact"><div class="sankey-toolbar"><div class="sankey-tabs" role="group" aria-label="Agrupar o fluxo">'+tabs+'</div></div>'+
-  '<div class="sankey-compact-layout"><div class="sankey-compact-flow">'+desktop+mobile+
-  '<p class="sankey-hint">Visão condensada. O fluxo central é uma representação do período, não uma conta bancária. Toque em um destino para ver detalhes.</p>'+
-  (all.length>4?'<button class="btn small" type="button" data-sankey-more>'+(sankeyShowAll?'Mostrar principais':'Mostrar todas as '+all.length+' categorias')+'</button>':'')+
-  allDetails+selectedDetails+warn+'</div>'+side+'</div></div>';
-}
-sankey=function(m,basis,depth){return compactSankey(m,basis,depth)};
-document.addEventListener('click',e=>{
- if(e.target.closest('[data-sankey-clear]')){sankeyChosen='';renderAll();return}
- const item=e.target.closest('[data-sankey-category]');
- if(item){
-  const root=item.closest('.sankey-ui'),months=viewedMonths();
-  const basis=root.closest('#sankeyFull')?document.querySelector('#flowBasis').value:'cash';
-  const g=sankeyGroups(months,basis,sankeyView).groups[Number(item.dataset.sankeyCategory)];
-  if(g){sankeyChosen=g.name;renderAll()}
- }
 });
