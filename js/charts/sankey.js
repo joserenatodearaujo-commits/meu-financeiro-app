@@ -125,7 +125,7 @@ document.addEventListener('click',e=>{
  const tab=e.target.closest('[data-sankey-view]');
  if(tab){sankeyView=tab.dataset.sankeyView;sankeyChosen='';sankeyShowAll=false;renderAll();return}
  const chip=e.target.closest('[data-sankey-pick]');
- if(chip){const root=chip.closest('.sankey-ui');const months=viewedMonths();const basis=root.closest('#sankeyFull')?document.querySelector('#flowBasis').value:'cash';const groups=sankeyGroups(months,basis,sankeyView).groups;let shown=sankeyShowAll?groups:groups.slice(0,4);if(!sankeyShowAll&&groups.length>4)shown=shown.concat([{name:'Outras categorias'}]);const current=shown[Number(chip.dataset.sankeyPick)];if(current){sankeyChosen=sankeyChosen===current.name?'':current.name;renderAll()}return}
+ if(chip){const root=chip.closest('.sankey-ui');const months=viewedMonths();const basis=root.closest('#sankeyFull')?document.querySelector('#flowBasis').value:'cash';const groups=sankeyGroups(months,basis,sankeyView).groups;let shown=groups.slice(0,4);if(groups.length>4)shown=shown.concat([{name:'Outras categorias'}]);const current=shown[Number(chip.dataset.sankeyPick)];if(current){sankeyChosen=sankeyChosen===current.name?'':current.name;renderAll()}return}
  const more=e.target.closest('[data-sankey-more]');
  if(more){sankeyShowAll=!sankeyShowAll;sankeyChosen='';renderAll();return}
  const expand=e.target.closest('[data-sankey-expand]');
