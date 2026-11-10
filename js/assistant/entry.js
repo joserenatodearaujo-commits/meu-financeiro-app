@@ -2,7 +2,7 @@
 // Meu Financeiro • Assistant dialog and opt-in browser AI.
 function agentCardDescription(){return `<div class="agent-tips">Fale ou escreva naturalmente: <b>“15 reais de combustível no Pix hoje”</b>. Você revisará os dados antes de gravar. Sem JSON.</div>`;}
 function openAgent(){if(!state)return;agentDraft=null;cleanAgentImage();
- modal('＋ Novo lançamento',`${agentCardDescription()}<div class="agent-tools"><button type="button" id="agentMic" class="btn">🎙️ Ditar</button><button type="button" id="agentPhoto" class="btn">📷 Foto</button><button type="button" id="agentTraditional" class="btn">✍️ Tradicional</button></div><div class="field"><label for="agentText">Descreva sua movimentação</label><textarea class="agent-text" id="agentText" name="agentText" rows="5" placeholder="Ex.: R$ 45 de almoço, no Pix, hoje" required></textarea></div><input class="hide" accept="image/*" capture="environment" id="agentFile" type="file"><div id="agentStatus" class="agent-status" role="status">A leitura de foto é feita neste dispositivo; a voz pode usar o reconhecimento do navegador.</div>`,async f=>{
+ modal('＋ Novo lançamento',`${agentCardDescription()}<div class="agent-tools"><button type="button" id="agentMic" class="btn">🎙️ Ditar</button><button type="button" id="agentPhoto" class="btn">📷 Foto</button><button type="button" id="agentTraditional" class="btn">✍️ Tradicional</button><button type="button" id="agentInvestment" class="btn">📈 Investimentos</button></div><div class="field"><label for="agentText">Descreva sua movimentação</label><textarea class="agent-text" id="agentText" name="agentText" rows="5" placeholder="Ex.: R$ 45 de almoço, no Pix, hoje" required></textarea></div><input class="hide" accept="image/*" capture="environment" id="agentFile" type="file"><div id="agentStatus" class="agent-status" role="status">A leitura de foto é feita neste dispositivo; a voz pode usar o reconhecimento do navegador.</div>`,async f=>{
  const text=String(f.get('agentText')||'').trim();if(!text)throw Error('Descreva a movimentação antes de continuar.');
  const fromVoice=$('#agentText')?.dataset?.fromVoice==='1',voiceUncertain=$('#agentText')?.dataset?.voiceUncertain==='1';
  let obj=null;try{obj=await browserAI(text)}catch(e){/* local fallback intentionally */}
@@ -19,6 +19,7 @@ function openAgent(){if(!state)return;agentDraft=null;cleanAgentImage();
  $('#agentPhoto').onclick=()=>$('#agentFile').click();
  $('#agentFile').onchange=e=>handleReceipt(e.target.files?.[0]);
  $('#agentTraditional').onclick=()=>{stopVoice();cleanAgentImage();entryForm();};
+ $('#agentInvestment').onclick=()=>{stopVoice();cleanAgentImage();entryForm(null,'investment');};
 }
 // Use browser AI only when the device actually exposes it. Most Android browsers will fall back to local classification.
 async function browserAI(text){
