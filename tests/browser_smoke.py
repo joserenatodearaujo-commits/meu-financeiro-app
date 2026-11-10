@@ -264,35 +264,21 @@ def test_one(browser,modular,width):
     for pageid in ['resumo','fluxo','movimentos','cartoes','metas','projecoes','investimentos','config']:
         p.locator(f'[data-page="{pageid}"]').click()
         assert p.evaluate('document.documentElement.scrollWidth <= innerWidth'),('mobile overflow',width,pageid)
-    # V2.28: compact Sankey must fit the width without chart-level scrolling.
+    # Restore original Sankey: same diagram and controls, fitted into card without scrollbar.
     p.locator('[data-page="fluxo"]').click()
-    assert p.locator('#sankeyFull .sankey-compact').count()==1
-    assert p.locator('#sankeyFull .sankey-canvas').count()==0
-    assert p.locator('#sankeyFull .chart-scroll').count()==0
-    dims=p.evaluate("""() => {
-      const wrap=document.querySelector('#sankeyFull .sankey-compact-flow');
-      const desktop=document.querySelector('#sankeyFull .sankey-compact-desktop');
-      const mobile=document.querySelector('#sankeyFull .sankey-compact-mobile');
-      const visible=getComputedStyle(mobile).display!=='none'?mobile:desktop;
-      return {container:wrap.getBoundingClientRect().width,graph:visible.getBoundingClientRect().width,
-        scroll:visible.scrollWidth,client:visible.clientWidth,
-        visible:getComputedStyle(visible).display!=='none'};
+    assert p.locator('#sankeyFull .sankey-interactive-svg').count()==1
+    assert p.locator('#sankeyFull .sankey-compact').count()==0
+    bounds=p.evaluate("""()=>{
+      const card=document.querySelector('#sankeyFull .sankey-canvas');
+      const svg=card.querySelector('svg');
+      return {cardWidth:card.getBoundingClientRect().width,
+       svgWidth:svg.getBoundingClientRect().width,
+       scrollWidth:card.scrollWidth,clientWidth:card.clientWidth,
+       viewBox:svg.getAttribute('viewBox')};
     }""")
-    assert dims['visible'] and dims['graph']<=dims['container']+1,dims
-    assert dims['scroll']<=dims['client']+2,('sankey nested horizontal scroll',width,dims)
-    assert p.evaluate('document.documentElement.scrollWidth<=innerWidth'),('page horizontal scrollbar',width)
-    p.locator('#sankeyFull [data-sankey-view="account"]').click()
-    assert p.locator('#sankeyFull .sankey-compact').count()==1
-    p.locator('#sankeyFull [data-sankey-view="category"]').click()
-    if p.locator('#sankeyFull .sankey-compact-mobile').is_visible():
-        pick=p.locator('#sankeyFull .sankey-mobile-destination[data-sankey-pick]')
-    else:
-        pick=p.locator('#sankeyFull .sankey-compact-desktop [data-sankey-pick]')
-    assert pick.count()>0
-    pick.first.click()
-    assert p.locator('#sankeyFull .sankey-selected-detail').count()==1
-    p.locator('#sankeyFull [data-sankey-clear]').click()
-    assert p.locator('#sankeyFull .sankey-selected-detail').count()==0
+    assert bounds['svgWidth'] <= bounds['cardWidth']+1,bounds
+    assert bounds['scrollWidth'] <= bounds['clientWidth']+2,bounds
+    assert bounds['viewBox'].startswith('0 0 1120 '),bounds
     # Voice recognition with disagreement between alternatives: must request amount confirmation.
     p.evaluate("""() => { window.SpeechRecognition = class {
       start() { queueMicrotask(() => this.onresult({ results: [[
