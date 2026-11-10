@@ -398,3 +398,6 @@ body.sankey-is-expanded{overflow:hidden}
  .sankey-compact .sankey-mobile-sources>div>div,.sankey-compact .sankey-mobile-destination{padding:7px 5px}
  .sankey-compact .sankey-mobile-sources b,.sankey-compact .sankey-mobile-destination b{font-size:12px}
 }
+
+.sankey-compact .sankey-all-category{width:100%;border:0;background:transparent;text-align:left;cursor:pointer;color:#31445a}
+.sankey-compact .sankey-all-category:hover,.sankey-compact .sankey-all-category:focus-visible{background:#e9f2fb;outline:2px solid #8bb8e7;border-radius:7px}
