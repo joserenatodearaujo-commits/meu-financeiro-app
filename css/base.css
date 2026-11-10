@@ -143,3 +143,15 @@ input::placeholder,textarea::placeholder{color:#697586;opacity:1;-webkit-text-fi
 .import-files-details>summary{cursor:pointer;font-weight:700;color:#33465d;padding:3px}
 .import-files-details .import-file-group{margin:10px 0}
 @media(max-width:720px){.import-preview-panel{padding:10px}.preview-stats{gap:5px}.preview-stats>div{padding:9px}.preview-stats small{font-size:10px}.preview-stats strong{font-size:19px}.preview-toolbar{align-items:stretch}.preview-search{width:100%}.preview-search input{flex:1;max-width:none}.preview-table{min-width:740px}}
+
+/* V2.27 - payment-first forms and daily transaction audit */
+.transaction-day-filter{display:flex;gap:7px;align-items:center;font-size:12px;color:#52647a;font-weight:600;white-space:nowrap}
+.transaction-day-filter input{min-height:37px;width:160px}
+.entry-payment-first{padding:14px 16px;margin:7px 0 16px;border:1px solid #cbd9e6;background:#f2f7fc;border-radius:12px}
+.entry-payment-first .field{max-width:100%;margin:0}
+.entry-payment-first select{font-size:15px;min-height:45px;font-weight:600}
+.entry-account[hidden],.entry-credit[hidden],.entry-recurring[hidden]{display:none!important}
+.entry-category{min-width:0}
+.entry-category>.field{margin-bottom:8px}
+#agentInvestment{border-color:#bfd3eb;background:#eef5ff;color:#205488}
+@media(max-width:730px){.transaction-day-filter{width:100%;justify-content:space-between;white-space:normal}.transaction-day-filter input{width:58%;min-width:0}#clearFilterDay{min-height:38px}.entry-payment-first{padding:10px}}
