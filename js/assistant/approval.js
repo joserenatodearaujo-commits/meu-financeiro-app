@@ -41,12 +41,16 @@ function openApproval(a){stopVoice();cleanAgentImage();
  if(tx.type==='investment'){tx.macro='Investimentos';tx.asset=tx.description;}
  const dup=state.transactions.some(t=>t.type===tx.type&&simplify(t.description)===simplify(tx.description)&&Math.abs(+t.amount-tx.amount)<0.001&&t.purchaseDate===tx.purchaseDate&&String(t.cardId||'')===String(tx.cardId||''));
  if(dup)throw Error('Possível lançamento duplicado encontrado. Confira o histórico antes de salvar.');
- const selected=chosenSubcategory(f,tx.macro);tx.micro=selected.micro;const newState={...state,taxonomy:selected.catalog,transactions:[...state.transactions,tx]};
- const encrypted=await encryptData(newState,passphrase,salt);
- await writeVault(encrypted); // gravação durável antes de atualizar interface
- const readback=await readVault(),decrypted=await decryptData(readback,passphrase);
- if(!decrypted.transactions.some(x=>x.id===tx.id))throw Error('Não consegui confirmar a gravação no cofre.');
- state=decrypted;agentDraft=null;$('#modalRoot').innerHTML='';renderAll();
+ const selected=chosenSubcategory(f,tx.macro);tx.micro=selected.micro;const previousState=state;
+ state={...state,taxonomy:selected.catalog,transactions:[...state.transactions,tx]};
+ try{
+  // Use the same encrypted save path as traditional entries, including sync dirty tracking.
+  await save();
+  const readback=await readVault(),decrypted=await decryptData(readback,passphrase);
+  if(!decrypted.transactions.some(x=>x.id===tx.id))throw Error('Não consegui confirmar a gravação no cofre.');
+  state=ensureFinancialState(decrypted);
+ }catch(error){state=previousState;throw error;}
+ agentDraft=null;$('#modalRoot').innerHTML='';renderAll();
  const msg=document.getElementById('saveToast');if(msg){msg.textContent='✓ Lançamento salvo e verificado: '+fmt(tx.amount)+' · '+tx.description;msg.hidden=false;setTimeout(()=>msg.hidden=true,7000)}
  return false;
  });
