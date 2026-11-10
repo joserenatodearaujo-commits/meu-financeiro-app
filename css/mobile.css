@@ -352,7 +352,7 @@ body.sankey-is-expanded{overflow:hidden}
 
 
 /* V2.28 Responsive compact Sankey: no nested vertical or horizontal scroll. */
-.sankey-ui.sankey-compact{min-width:0;width:100%;max-width:100%;overflow:visible}
+.sankey-ui.sankey-compact{min-width:0;width:100%;max-width:100%;overflow:visible;container-type:inline-size}
 .sankey-compact .sankey-compact-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(170px,235px);gap:12px;min-width:0;align-items:start}
 .sankey-compact .sankey-compact-flow{min-width:0;overflow:visible}
 .sankey-compact .sankey-compact-desktop{width:100%;max-width:100%;min-width:0;overflow:visible;background:#fbfcff;border:1px solid #e1e9f2;border-radius:12px;padding:7px}
@@ -374,7 +374,7 @@ body.sankey-is-expanded{overflow:hidden}
  .sankey-compact .sankey-compact-layout{grid-template-columns:1fr}
  .sankey-compact .sankey-compact-side{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-@media(max-width:730px){
+@container (max-width:710px){
  .sankey-compact .sankey-compact-desktop{display:none}
  .sankey-compact .sankey-compact-mobile{display:block;min-width:0;max-width:100%;padding:10px 8px;background:#f9fbff;border:1px solid #dfe7ee;border-radius:12px}
  .sankey-compact .sankey-mobile-sources,.sankey-compact .sankey-mobile-destinations{min-width:0}
@@ -393,7 +393,7 @@ body.sankey-is-expanded{overflow:hidden}
  .sankey-compact .sankey-tabs{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
  .sankey-compact .sankey-tab{font-size:11px;min-width:0;padding:8px 3px}
 }
-@media(max-width:370px){
+@container (max-width:370px){
  .sankey-compact .sankey-mobile-sources>div,.sankey-compact .sankey-mobile-destinations>div{gap:4px}
  .sankey-compact .sankey-mobile-sources>div>div,.sankey-compact .sankey-mobile-destination{padding:7px 5px}
  .sankey-compact .sankey-mobile-sources b,.sankey-compact .sankey-mobile-destination b{font-size:12px}
