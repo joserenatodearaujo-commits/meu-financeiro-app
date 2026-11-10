@@ -13,7 +13,7 @@ function openApproval(a){stopVoice();cleanAgentImage();
  const valueReview=requireCheck?`<div class="amount-confirm"><label><input type="checkbox" name="amountConfirmed" id="amountConfirmed" required> <span>Conferi o valor da despesa em reais e centavos</span></label></div>`:'';
  const originalVoice=a.fromVoice?`<div class="agent-original"><strong>Você disse (transcrição do Android):</strong><div>${esc(a.sourceText||'')}</div><small>Se a transcrição estiver errada, corrija o campo Valor abaixo.</small></div>`:'';
  modal('Confirmar lançamento',`<div class="agent-preview"><div class="muted">Prévia • nenhum dado foi gravado</div><div class="agent-value">${fmt(a.amount)}</div><b>${esc(a.description)}</b><div class="agent-warning">${esc(warning)}</div>${originalVoice}${valueReview}</div><div class="entry-payment-first"><div class="field"><label>Como foi pago / recebido?</label><select name="paymentMethod">${opts(pay,a.paymentMethod)}</select></div></div><div class="formgrid">
- <div class="field"><label>Tipo</label><select name="type">${opts([['expense','Despesa'],['income','Receita'],['investment','Investimento'],['transfer','Transferência']],a.type)}</select></div>
+ <div class="field"><label>Tipo</label><select name="type">${opts([['expense','Despesa'],['income','Receita']],a.type)}</select></div>
  ${as('description','Descrição',a.description,'required maxlength="120"')}
  ${as('amount','Valor R$',a.amount||'','type="number" min="0.01" step="0.01" required')}
  <div class="field"><label>Macro</label><select name="macro">${catOpt}</select></div>
@@ -29,7 +29,7 @@ function openApproval(a){stopVoice();cleanAgentImage();
  accountId:v.accountId||'cash-default',cardId:v.cardId||'',installments:Number(v.installments)||1,firstDue:v.paymentDate,recurring:v.recurring==='yes',recurringEnd:'',asset:'',operation:'aporte'};
  if(!tx.description||!Number.isFinite(tx.amount)||tx.amount<=0)throw Error('Verifique descrição e valor positivo.');
  if(!/^\d{4}-\d{2}-\d{2}$/.test(tx.purchaseDate))throw Error('Informe uma data válida.');
- if(!['income','expense','investment','transfer'].includes(tx.type))throw Error('Tipo inválido.');
+ if(!['income','expense'].includes(tx.type))throw Error('Este card é para receitas e despesas. Use o card separado de investimentos ou transferências.');
  if(tx.paymentMethod==='unspecified')throw Error('Escolha a forma de pagamento.');if(tx.paymentMethod==='cash'&&!state.accounts.some(x=>x.id===tx.accountId&&x.type==='cash'))throw Error('Cadastre e selecione uma carteira em Contas e cartões para pagamentos em dinheiro.');if(tx.paymentMethod==='pix'&&!state.accounts.some(x=>x.id===tx.accountId&&x.type==='bank'))throw Error('Selecione uma conta bancária para Pix ou débito.');
  if(!Number.isInteger(tx.installments)||tx.installments<1||tx.installments>120)throw Error('Parcelamento inválido.');
  if(tx.paymentMethod==='credit'){
