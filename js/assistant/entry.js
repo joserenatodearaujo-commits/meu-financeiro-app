@@ -12,6 +12,8 @@ function openAgent(){if(!state)return;agentDraft=null;cleanAgentImage();
  if(obj&&local.amount&&Math.abs(Number(obj.amount)-local.amount)>0.009){parsed.amount=local.amount;parsed.amountUncertain=true;parsed.amountIssue='O interpretador e o modelo divergiram sobre o valor. Confira e corrija.';}
  parsed.fromVoice=fromVoice;parsed.sourceText=fromVoice?text.slice(0,220):'';
  if(voiceUncertain){parsed.amountUncertain=true;parsed.amountIssue='O reconhecimento de voz ofereceu valores diferentes. Confira o total.';}
+ if(parsed.type==='investment'){entryForm(null,'investment',parsed);return false;}
+ if(parsed.type==='transfer'){alert('Para uma transferência entre suas contas, utilize Contas e cartões → Transferir entre contas.');return false;}
  openApproval(parsed);return false;
  });
  $('#modalForm button[type="submit"]').textContent='Gerar card de confirmação';
